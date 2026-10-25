@@ -31,6 +31,13 @@ jobs:
       - name: Build Web (release)
         run: flutter build web --release --no-tree-shake-icons
 
+      - name: Ensure Vercel SPA/COOP config in build output
+        run: |
+          set -euo pipefail
+          test -f web/vercel.json
+          cp web/vercel.json build/web/vercel.json
+          test -f build/web/vercel.json
+
       - name: Install Vercel CLI
         run: npm install -g vercel@latest
 
