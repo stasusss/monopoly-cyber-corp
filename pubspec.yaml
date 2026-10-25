@@ -1,0 +1,51 @@
+name: monopoly
+description: Classic Monopoly as a Flutter Web Progressive Web Application.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # State management — Riverpod pairs cleanly with immutable freezed models
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # Immutable models + JSON (board config, save/load)
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # UUID for player / session ids
+  uuid: ^4.5.1
+
+  # Equality helpers where freezed is not used
+  collection: ^1.19.1
+
+  # Cyberpunk typography
+  google_fonts: ^6.2.1
+
+  # Persistence (web localStorage via SharedPreferences)
+  shared_preferences: ^2.5.3
+
+  # SFX (optional clips; service degrades gracefully)
+  audioplayers: ^6.4.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+  # Code generation
+  build_runner: ^2.4.15
+  freezed: ^2.5.8
+  json_serializable: ^6.9.4
+  riverpod_generator: ^2.6.4
+
+flutter:
+  uses-material-design: true
