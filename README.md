@@ -2,6 +2,9 @@
 
 Flutter Web PWA — Night City Monopoly-style board game.
 
+- **GitHub:** https://github.com/stasusss/monopoly-cyber-corp
+- **Live (Vercel):** https://web-eight-jet-29.vercel.app
+
 ## Local run
 
 ```bash
@@ -28,6 +31,10 @@ npx vercel deploy build/web --prod --yes
 
 ### Option B — GitHub Actions
 
-1. Create a Vercel project and copy **Token**, **Org ID**, **Project ID**.
-2. Add GitHub secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`.
-3. Push to `main` — workflow `.github/workflows/deploy_to_vercel.yml` builds & deploys.
+1. Vercel → Account Settings → Tokens (create token).
+2. Project Settings → General → copy **Project ID**; Team/Account → **Org ID**.
+3. GitHub repo → Settings → Secrets → Actions:
+   - `VERCEL_TOKEN`
+   - `VERCEL_ORG_ID` = `team_na0SQbn2OUljLR6qt1XaDySJ`
+   - `VERCEL_PROJECT_ID` = `prj_jqNjGSeJz62qsnEvrcHqy59Y1rGj`
+4. Push to `main` — workflow `.github/workflows/deploy_to_vercel.yml` builds & deploys.
