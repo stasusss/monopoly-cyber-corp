@@ -49,6 +49,34 @@ abstract final class GameFactory {
     );
   }
 
+  /// Online match: keep lobby presence IDs so Realtime actions map 1:1.
+  static GameState fromPlayers(List<Player> players) {
+    assert(
+      players.length >= GameRules.minPlayers &&
+          players.length <= GameRules.maxPlayers,
+      'Need ${GameRules.minPlayers}–${GameRules.maxPlayers} players',
+    );
+    return GameState(
+      board: BoardData.createBoard(),
+      players: [
+        for (final p in players)
+          p.copyWith(
+            balance: GameRules.startingMoney,
+            position: 0,
+            inJail: false,
+            jailTurns: 0,
+            propertyIndexes: const [],
+            isBankrupt: false,
+            getOutOfJailCards: 0,
+          ),
+      ],
+      log: [
+        'UPLINK BOOT · operatives: ${players.map((p) => p.name).join(', ')}. '
+        'Starting credits: ${GameRules.credits(GameRules.startingMoney)}.',
+      ],
+    );
+  }
+
   static List<PlayerRosterEntry> get defaultRoster => const [
         (
           name: 'NETRUNNER',

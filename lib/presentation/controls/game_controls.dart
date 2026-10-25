@@ -14,11 +14,16 @@ class GameControlsBar extends ConsumerWidget {
     final state = ref.watch(gameControllerProvider);
     final c = ref.read(gameControllerProvider.notifier);
     final idle = state.pendingAction is PendingNone;
+    final localOk = c.isLocalInputAllowed;
 
-    final canRoll =
-        idle && state.phase == TurnPhase.waitingForRoll && !state.isGameOver;
-    final canEnd =
-        idle && state.phase == TurnPhase.canEndTurn && !state.isGameOver;
+    final canRoll = localOk &&
+        idle &&
+        state.phase == TurnPhase.waitingForRoll &&
+        !state.isGameOver;
+    final canEnd = localOk &&
+        idle &&
+        state.phase == TurnPhase.canEndTurn &&
+        !state.isGameOver;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),

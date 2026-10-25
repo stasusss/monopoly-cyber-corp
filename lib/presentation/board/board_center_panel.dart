@@ -13,21 +13,25 @@ class BoardCenterPanel extends StatelessWidget {
     required this.onRoll,
     required this.onEndTurn,
     required this.onPayJailFine,
+    this.inputEnabled = true,
   });
 
   final GameState state;
   final VoidCallback onRoll;
   final VoidCallback onEndTurn;
   final VoidCallback onPayJailFine;
+  final bool inputEnabled;
 
   bool get _idlePending => state.pendingAction is PendingNone;
 
   @override
   Widget build(BuildContext context) {
-    final canRoll = state.phase == TurnPhase.waitingForRoll &&
+    final canRoll = inputEnabled &&
+        state.phase == TurnPhase.waitingForRoll &&
         !state.isGameOver &&
         _idlePending;
-    final canEnd = state.phase == TurnPhase.canEndTurn &&
+    final canEnd = inputEnabled &&
+        state.phase == TurnPhase.canEndTurn &&
         !state.isGameOver &&
         _idlePending;
     final inJail = state.activePlayer.inJail;
@@ -101,7 +105,7 @@ class BoardCenterPanel extends StatelessWidget {
                 ),
                 if (inJail && state.phase == TurnPhase.waitingForRoll)
                   OutlinedButton(
-                    onPressed: onPayJailFine,
+                    onPressed: inputEnabled ? onPayJailFine : null,
                     child:
                         Text('BAIL ${GameRules.credits(GameRules.jailFine)}'),
                   ),

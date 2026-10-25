@@ -19,6 +19,9 @@ import 'ai/ai_service.dart';
 import 'cards/card_resolver.dart';
 import 'cards/deck_manager.dart';
 import 'cards/game_card.dart';
+import 'network/network_action.dart';
+import 'network/online_session.dart';
+import 'network/supabase_realtime_service.dart';
 import 'rules_engine.dart';
 import 'trade/auction_manager.dart';
 import 'trade/trade_manager.dart';
@@ -28,7 +31,8 @@ final gameControllerProvider =
   return GameController();
 });
 
-/// Turn state machine + board mutations for Pass & Play / heuristic AI.
+/// Turn state machine + board mutations for Pass & Play / heuristic AI /
+/// peer-host online (host validates + STATE_SYNC).
 class GameController extends StateNotifier<GameState>
     implements AiGameBridge {
   GameController({
@@ -56,12 +60,43 @@ class GameController extends StateNotifier<GameState>
   DeckManager _decks;
   AuctionState? _auction;
 
+  OnlineSession? _online;
+  bool _applyingRemote = false;
+  StreamSubscription<NetworkAction>? _actionSub;
+  StreamSubscription<Map<String, dynamic>>? _syncSub;
+  StreamSubscription<List<PresenceMember>>? _presenceSub;
+  StreamSubscription<(PresenceMember, List<PresenceMember>)>? _leaveSub;
+  final Map<String, Timer> _disconnectTimers = {};
+
   DeckManager get decks => _decks;
+
+  bool get isOnline => _online != null;
+  bool get isHost => _online == null || _online!.isHost;
+  String? get localPlayerId => _online?.localPlayerId;
+
+  /// UI: only the local operative may press turn actions in online mode.
+  bool get isLocalInputAllowed {
+    if (!isOnline) return true;
+    final id = localPlayerId;
+    if (id == null) return false;
+    final pending = state.pendingAction;
+    if (pending is PendingAuction) return pending.currentBidderId == id;
+    if (pending is PendingTradeOffer) return pending.toPlayerId == id;
+    if (pending is PendingBuyOffer ||
+        pending is PendingRentNotice ||
+        pending is PendingTaxNotice ||
+        pending is PendingCardNotice) {
+      return state.activePlayer.id == id;
+    }
+    return state.activePlayer.id == id;
+  }
 
   Player get _active => state.activePlayer;
 
   void _pokeAi() {
-    if (enableAi) _ai.scheduleIfNeeded();
+    if (!enableAi) return;
+    if (isOnline && !isHost) return;
+    _ai.scheduleIfNeeded();
   }
 
   // —— AiGameBridge ——————————————————————————————————————————————
@@ -115,6 +150,8 @@ class GameController extends StateNotifier<GameState>
   // —— Public API ————————————————————————————————————————————————
 
   void rollDice() {
+    if (_clientSend(NetworkActionType.roll)) return;
+    if (!_allowActivePlayerAction()) return;
     if (state.phase != TurnPhase.waitingForRoll || state.isGameOver) return;
     if (state.pendingAction is! PendingNone) return;
 
@@ -127,6 +164,7 @@ class GameController extends StateNotifier<GameState>
     if (_active.inJail) {
       _resolveJailRoll(roll);
       _pokeAi();
+      _hostSync();
       return;
     }
 
@@ -137,15 +175,18 @@ class GameController extends StateNotifier<GameState>
         resetDoubles: true,
       );
       _pokeAi();
+      _hostSync();
       return;
     }
 
     state = state.copyWith(consecutiveDoubles: doubles);
     _beginMove(steps: roll.total);
     _pokeAi();
+    _hostSync();
   }
 
   void advanceMoveStep() {
+    if (isOnline && !isHost) return;
     if (state.phase != TurnPhase.movingToken || state.moveStepsLeft <= 0) {
       return;
     }
@@ -181,23 +222,30 @@ class GameController extends StateNotifier<GameState>
       );
       _resolveCell();
       _pokeAi();
+      _hostSync();
     }
   }
 
   void finishMove() {
+    if (isOnline && !isHost) return;
     while (state.phase == TurnPhase.movingToken && state.moveStepsLeft > 0) {
       advanceMoveStep();
     }
   }
 
   void acceptBuy() {
+    if (_clientSend(NetworkActionType.buy)) return;
+    if (!_allowActivePlayerAction()) return;
     final pending = state.pendingAction;
     if (pending is! PendingBuyOffer) return;
     _purchase(pending.cellIndex);
     _clearPendingAndContinue();
+    _hostSync();
   }
 
   void declineBuy() {
+    if (_clientSend(NetworkActionType.declineBuy)) return;
+    if (!_allowActivePlayerAction()) return;
     final pending = state.pendingAction;
     if (pending is! PendingBuyOffer) return;
     _speak(
@@ -211,9 +259,12 @@ class GameController extends StateNotifier<GameState>
     );
     soundService.play(Sfx.auction);
     _beginAuction(pending.cellIndex, pending.propertyName);
+    _hostSync();
   }
 
   void auctionBid(int amount) {
+    if (_clientSend(NetworkActionType.auctionBid, {'amount': amount})) return;
+    if (!_allowAuctionActor()) return;
     final auction = _auction;
     if (auction == null) return;
     final bidderId = auction.currentBidderId;
@@ -224,9 +275,12 @@ class GameController extends StateNotifier<GameState>
       log: _append('${bidder.name} bids ${GameRules.credits(amount)}.'),
     );
     _afterAuctionAction();
+    _hostSync();
   }
 
   void auctionPass() {
+    if (_clientSend(NetworkActionType.auctionPass)) return;
+    if (!_allowAuctionActor()) return;
     final auction = _auction;
     if (auction == null) return;
     final bidderId = auction.currentBidderId;
@@ -234,9 +288,11 @@ class GameController extends StateNotifier<GameState>
     AuctionManager.pass(auction, bidderId);
     state = state.copyWith(log: _append('${bidder.name} passes auction.'));
     _afterAuctionAction();
+    _hostSync();
   }
 
   void proposeTrade(TradeOffer offer) {
+    if (_clientSend(NetworkActionType.trade, offer.toJson())) return;
     if (!TradeManager.validate(state, offer)) return;
     state = state.copyWith(
       pendingAction: PendingAction.tradeOffer(
@@ -251,9 +307,12 @@ class GameController extends StateNotifier<GameState>
       log: _append('Trade proposed.'),
     );
     _pokeAi();
+    _hostSync();
   }
 
   void acceptTrade() {
+    if (_clientSend(NetworkActionType.tradeAccept)) return;
+    if (!_allowTradeResponder()) return;
     final pending = state.pendingAction;
     if (pending is! PendingTradeOffer) return;
     final offer = TradeOffer(
@@ -270,9 +329,12 @@ class GameController extends StateNotifier<GameState>
       log: _append('Trade executed.'),
     );
     _pokeAi();
+    _hostSync();
   }
 
   void declineTrade() {
+    if (_clientSend(NetworkActionType.tradeDecline)) return;
+    if (!_allowTradeResponder()) return;
     if (state.pendingAction is! PendingTradeOffer) return;
     state = state.copyWith(
       pendingAction: const PendingAction.none(),
@@ -280,9 +342,12 @@ class GameController extends StateNotifier<GameState>
       log: _append('Trade declined.'),
     );
     _pokeAi();
+    _hostSync();
   }
 
   void dismissNotice() {
+    if (_clientSend(NetworkActionType.dismissNotice)) return;
+    if (!_allowActivePlayerAction()) return;
     final pending = state.pendingAction;
     if (pending is PendingBuyOffer ||
         pending is PendingWinner ||
@@ -312,9 +377,12 @@ class GameController extends StateNotifier<GameState>
         _pokeAi();
       }
     }
+    _hostSync();
   }
 
   void payJailFine() {
+    if (_clientSend(NetworkActionType.payJailFine)) return;
+    if (!_allowActivePlayerAction()) return;
     if (!_active.inJail || state.phase != TurnPhase.waitingForRoll) return;
     if (!RulesEngine.canAfford(_active, GameRules.jailFine)) {
       if (_active.isAi) {
@@ -341,9 +409,12 @@ class GameController extends StateNotifier<GameState>
       ),
     );
     _pokeAi();
+    _hostSync();
   }
 
   void endTurn() {
+    if (_clientSend(NetworkActionType.endTurn)) return;
+    if (!_allowActivePlayerAction()) return;
     if (state.phase != TurnPhase.canEndTurn || state.isGameOver) return;
     if (state.pendingAction is! PendingNone) return;
 
@@ -358,14 +429,20 @@ class GameController extends StateNotifier<GameState>
         log: _append('${_active.name} ходить ще раз (дубль).'),
       );
       _pokeAi();
+      _hostSync();
       return;
     }
 
     _advanceToNextPlayer();
+    _hostSync();
   }
 
   /// Build one house / hotel step on [cellIndex] (even-build enforced).
   bool buildHouse(int cellIndex) {
+    if (_clientSend(NetworkActionType.buildHouse, {'cellIndex': cellIndex})) {
+      return false;
+    }
+    if (!_allowActivePlayerAction()) return false;
     final cell = state.cellAt(cellIndex);
     if (cell is! PropertyCell || cell.ownerId != _active.id) return false;
     if (cell.isMortgaged || cell.houses >= 5) return false;
@@ -398,11 +475,13 @@ class GameController extends StateNotifier<GameState>
         '(${cell.houses + 1}/5) за \$$cost.',
       ),
     );
+    _hostSync();
     return true;
   }
 
   /// Mortgage an owned unimproved property; returns cash raised (0 if failed).
   int mortgageProperty(int cellIndex) {
+    if (isOnline && !isHost && !_applyingRemote) return 0;
     final cell = state.cellAt(cellIndex);
     final ownerId = cell.ownerIdOrNull;
     if (ownerId == null || cell.isMortgagedOrFalse) return 0;
@@ -496,9 +575,70 @@ class GameController extends StateNotifier<GameState>
   }
 
   void restart({List<PlayerRosterEntry>? roster}) {
+    if (isOnline && !isHost) return;
     _ai.cancel();
     state = GameFactory.newGame(roster: roster ?? GameFactory.defaultRoster);
     _pokeAi();
+    _hostSync();
+  }
+
+  /// Bind Supabase Realtime for peer-host multiplayer (call from lobby).
+  void bindOnline({
+    required String localPlayerId,
+    required SupabaseRealtimeService realtime,
+  }) {
+    detachOnline();
+    _online = OnlineSession(localPlayerId: localPlayerId, realtime: realtime);
+    _actionSub = realtime.onActionReceived.listen(_onRemoteAction);
+    _syncSub = realtime.onStateSyncReceived.listen(_applyStateSync);
+    _presenceSub = realtime.onPresenceChanged.listen(_onPresenceSync);
+    _leaveSub = realtime.onPresenceLeave.listen((event) {
+      _onPresenceLeave(event.$1, event.$2);
+    });
+  }
+
+  /// Host seeds a match from lobby presence (preserves player IDs).
+  void bootstrapOnlineRoster(List<PresenceMember> members) {
+    if (!isOnline || !isHost) return;
+    final capped = members.take(GameRules.maxPlayers).toList();
+    if (capped.length < GameRules.minPlayers) return;
+
+    final players = [
+      for (final m in capped)
+        Player(
+          id: m.playerId,
+          name: m.name,
+          tokenColor: TokenColor.values.firstWhere(
+            (c) => c.name == m.tokenColor,
+            orElse: () => TokenColor.blue,
+          ),
+          balance: GameRules.startingMoney,
+          isAi: false,
+        ),
+    ];
+
+    _ai.cancel();
+    _auction = null;
+    _decks = DeckManager.shuffled(_random);
+    state = GameFactory.fromPlayers(players);
+    _hostSync();
+    _pokeAi();
+  }
+
+  void detachOnline() {
+    for (final t in _disconnectTimers.values) {
+      t.cancel();
+    }
+    _disconnectTimers.clear();
+    _actionSub?.cancel();
+    _syncSub?.cancel();
+    _presenceSub?.cancel();
+    _leaveSub?.cancel();
+    _actionSub = null;
+    _syncSub = null;
+    _presenceSub = null;
+    _leaveSub = null;
+    _online = null;
   }
 
   // —— Dev / QA debug hooks (kDebugMode UI only) ————————————————
@@ -607,8 +747,191 @@ class GameController extends StateNotifier<GameState>
 
   @override
   void dispose() {
+    detachOnline();
     _ai.cancel();
     super.dispose();
+  }
+
+  // —— Online peer-host ——————————————————————————————————————————
+
+  bool _clientSend(
+    NetworkActionType type, [
+    Map<String, dynamic> payload = const {},
+  ]) {
+    if (!isOnline || isHost || _applyingRemote) return false;
+    final id = localPlayerId;
+    if (id == null) return true;
+    unawaited(
+      _online!.realtime.sendAction(
+        NetworkAction(type: type, senderId: id, payload: payload),
+      ),
+    );
+    return true;
+  }
+
+  bool _allowActivePlayerAction() {
+    if (!isOnline || _applyingRemote) return true;
+    if (isHost && state.activePlayer.isAi) return true;
+    return state.activePlayer.id == localPlayerId;
+  }
+
+  bool _allowAuctionActor() {
+    if (!isOnline || _applyingRemote) return true;
+    final auction = _auction;
+    if (auction == null) return false;
+    if (isHost) {
+      final bidder = state.players
+          .where((p) => p.id == auction.currentBidderId)
+          .firstOrNull;
+      if (bidder?.isAi == true) return true;
+    }
+    return auction.currentBidderId == localPlayerId;
+  }
+
+  bool _allowTradeResponder() {
+    if (!isOnline || _applyingRemote) return true;
+    final pending = state.pendingAction;
+    if (pending is! PendingTradeOffer) return false;
+    if (isHost) {
+      final to = state.players
+          .where((p) => p.id == pending.toPlayerId)
+          .firstOrNull;
+      if (to?.isAi == true) return true;
+    }
+    return pending.toPlayerId == localPlayerId;
+  }
+
+  void _hostSync() {
+    if (!isOnline || !isHost || _applyingRemote) return;
+    unawaited(_broadcastSync());
+  }
+
+  Future<void> _broadcastSync() async {
+    final online = _online;
+    if (online == null || !online.isHost) return;
+    await online.realtime.sendStateSync({
+      'game': state.toJson(),
+      'decks': _decks.toJson(),
+      'auction': _auction?.toJson(),
+    });
+  }
+
+  void _applyStateSync(Map<String, dynamic> envelope) {
+    if (isHost) return; // host is authoritative
+    try {
+      final gameRaw = envelope['game'] ?? envelope['state'] ?? envelope;
+      if (gameRaw is! Map) return;
+      final next = GameState.fromJson(Map<String, dynamic>.from(gameRaw));
+      final decksRaw = envelope['decks'];
+      if (decksRaw is Map) {
+        _decks = DeckManager.fromJson(
+          Map<String, dynamic>.from(decksRaw),
+          _random,
+        );
+      }
+      final auctionRaw = envelope['auction'];
+      _auction = auctionRaw is Map
+          ? AuctionState.fromJson(Map<String, dynamic>.from(auctionRaw))
+          : null;
+      _ai.cancel();
+      state = next;
+    } catch (e, st) {
+      assert(() {
+        // ignore: avoid_print
+        print('STATE_SYNC apply failed: $e\n$st');
+        return true;
+      }());
+    }
+  }
+
+  void _onRemoteAction(NetworkAction action) {
+    if (!isHost) return;
+    if (action.senderId == localPlayerId) return;
+
+    _applyingRemote = true;
+    try {
+      switch (action.type) {
+        case NetworkActionType.roll:
+          if (state.activePlayer.id == action.senderId) rollDice();
+        case NetworkActionType.buy:
+          if (state.activePlayer.id == action.senderId) acceptBuy();
+        case NetworkActionType.declineBuy:
+          if (state.activePlayer.id == action.senderId) declineBuy();
+        case NetworkActionType.endTurn:
+          if (state.activePlayer.id == action.senderId) endTurn();
+        case NetworkActionType.dismissNotice:
+          if (state.activePlayer.id == action.senderId) dismissNotice();
+        case NetworkActionType.payJailFine:
+          if (state.activePlayer.id == action.senderId) payJailFine();
+        case NetworkActionType.auctionBid:
+          if (_auction?.currentBidderId == action.senderId) {
+            auctionBid((action.payload['amount'] as num?)?.toInt() ?? 0);
+          }
+        case NetworkActionType.auctionPass:
+          if (_auction?.currentBidderId == action.senderId) auctionPass();
+        case NetworkActionType.tradeAccept:
+          acceptTrade();
+        case NetworkActionType.tradeDecline:
+          declineTrade();
+        case NetworkActionType.trade:
+          proposeTrade(TradeOffer.fromJson(action.payload));
+        case NetworkActionType.buildHouse:
+          buildHouse((action.payload['cellIndex'] as num?)?.toInt() ?? -1);
+        case NetworkActionType.kickToAi:
+        case NetworkActionType.ready:
+        case NetworkActionType.startGame:
+          break;
+      }
+    } finally {
+      _applyingRemote = false;
+    }
+    unawaited(_broadcastSync());
+  }
+
+  void _onPresenceSync(List<PresenceMember> members) {
+    final onlineIds = members.map((m) => m.playerId).toSet();
+    for (final id in onlineIds) {
+      _disconnectTimers.remove(id)?.cancel();
+    }
+    if (isOnline && isHost) {
+      _pokeAi();
+    }
+  }
+
+  void _onPresenceLeave(
+    PresenceMember left,
+    List<PresenceMember> remaining,
+  ) {
+    if (!isOnline || !isHost) return;
+    final id = left.playerId;
+    _disconnectTimers[id]?.cancel();
+    _disconnectTimers[id] = Timer(disconnectAiGrace, () {
+      _disconnectTimers.remove(id);
+      _convertDisconnectedToAi(id);
+    });
+  }
+
+  void _convertDisconnectedToAi(String playerId) {
+    if (!isHost) return;
+    final idx = state.players.indexWhere((p) => p.id == playerId);
+    if (idx < 0) return;
+    final player = state.players[idx];
+    if (player.isAi || player.isBankrupt) return;
+
+    final bot = player.copyWith(
+      isAi: true,
+      aiProfile: player.aiProfile ?? AiProfile.strategist,
+    );
+    final players = [...state.players];
+    players[idx] = bot;
+    state = state.copyWith(
+      players: players,
+      log: _append(
+        '${player.name} SIGNAL LOST >15s → AI TAKEOVER (${bot.aiProfile?.name ?? 'bot'}).',
+      ),
+    );
+    unawaited(_broadcastSync());
+    _pokeAi();
   }
 
   // —— Internals ————————————————————————————————————————————————

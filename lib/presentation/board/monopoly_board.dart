@@ -110,6 +110,7 @@ class _MonopolyBoardState extends ConsumerState<MonopolyBoard> {
       height: cell * 9,
       child: BoardCenterPanel(
         state: state,
+        inputEnabled: controller.isLocalInputAllowed,
         onRoll: controller.rollDice,
         onEndTurn: controller.endTurn,
         onPayJailFine: controller.payJailFine,
