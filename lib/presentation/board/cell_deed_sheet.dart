@@ -15,6 +15,7 @@ import '../../models/game_state.dart';
 import '../../models/pending_action.dart';
 import '../../models/player.dart';
 import 'board_cell_widget.dart';
+import 'cell_art.dart';
 
 Future<void> showCellDeedSheet(
   BuildContext context, {
@@ -145,7 +146,15 @@ class _DeedPage extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
       children: [
-        Container(height: 10, color: accent),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            height: 168,
+            width: double.infinity,
+            child: CellArtwork(cell: cell),
+          ),
+        ),
+        Container(height: 4, color: accent),
         const SizedBox(height: 12),
         Text(
           cell.name,

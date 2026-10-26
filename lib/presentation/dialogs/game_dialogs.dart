@@ -8,6 +8,7 @@ import '../../logic/game_controller.dart';
 import '../../logic/nightfall.dart';
 import '../../models/game_state.dart';
 import '../../models/pending_action.dart';
+import '../board/cell_art.dart';
 import 'auction_dialog.dart';
 import 'card_dialog.dart';
 import 'cyber_dialog_frame.dart';
@@ -127,6 +128,12 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
                   style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                         color: CyberColors.neonCyan,
                       ),
+                ),
+                const SizedBox(height: 8),
+                CellPortrait(
+                  cell: state.board[a.cellIndex],
+                  height: 140,
+                  showCaption: false,
                 ),
                 const SizedBox(height: 8),
                 Text(s.claimAsk(a.propertyName)),

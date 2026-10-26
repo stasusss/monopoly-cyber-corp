@@ -7,6 +7,7 @@ import '../../core/theme/cyber_theme.dart';
 import '../../models/game_state.dart';
 import '../../models/pending_action.dart';
 import '../controls/empire_menu.dart';
+import 'cell_art.dart';
 import '../widgets/animated_credits.dart';
 import '../widgets/dice_view.dart';
 import '../widgets/turn_action_button.dart';
@@ -20,6 +21,8 @@ class BoardCenterPanel extends StatelessWidget {
     required this.onPayJailFine,
     this.inputEnabled = true,
     this.showActions = true,
+    this.focusIndex,
+    this.onOpenFocus,
   });
 
   final GameState state;
@@ -27,6 +30,10 @@ class BoardCenterPanel extends StatelessWidget {
   final VoidCallback onEndTurn;
   final VoidCallback onPayJailFine;
   final bool inputEnabled;
+
+  /// Cell shown large in the center. Null follows the active token.
+  final int? focusIndex;
+  final VoidCallback? onOpenFocus;
 
   /// Desktop keeps roll / end / bail in the board center.
   /// Narrow layouts use the bottom bar instead, so the center stays readable.
@@ -51,6 +58,9 @@ class BoardCenterPanel extends StatelessWidget {
         !state.isGameOver;
     final lastLine = state.log.isEmpty ? null : state.log.last;
     final s = stringsOf(context);
+    final focusAt = focusIndex ?? state.activePlayer.position;
+    final focus = state.board[
+        focusAt.clamp(0, state.board.length - 1).toInt()];
 
     final body = Column(
           mainAxisSize: showActions ? MainAxisSize.max : MainAxisSize.min,
@@ -88,6 +98,12 @@ class BoardCenterPanel extends StatelessWidget {
                 color: CyberColors.textMuted,
                 fontSize: 11,
               ),
+            ),
+            const SizedBox(height: 4),
+            CellPortrait(
+              cell: focus,
+              height: showActions ? 128 : 84,
+              onTap: onOpenFocus,
             ),
             const SizedBox(height: 4),
             Text(

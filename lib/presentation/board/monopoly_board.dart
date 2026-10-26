@@ -214,6 +214,10 @@ class _MonopolyBoardState extends ConsumerState<MonopolyBoard> {
         state: state,
         showActions: wide,
         inputEnabled: controller.isLocalInputAllowed,
+        focusIndex: _selected ?? state.activePlayer.position,
+        onOpenFocus: _selected == null
+            ? () => _openCell(state.activePlayer.position)
+            : null,
         onRoll: controller.rollDice,
         onEndTurn: controller.endTurn,
         onPayJailFine: controller.payJailFine,

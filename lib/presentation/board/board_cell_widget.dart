@@ -5,9 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/game_rules.dart';
 import '../../core/constants/street_colors.dart';
-import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../models/cell.dart';
+import 'cell_art.dart';
 
 class BoardCellWidget extends StatelessWidget {
   const BoardCellWidget({
@@ -44,7 +44,15 @@ class BoardCellWidget extends StatelessWidget {
     final property = cell is PropertyCell ? cell as PropertyCell : null;
     final mortgaged = cell.isMortgagedOrFalse;
 
-    return Material(
+    final price = cell.priceOrNull;
+    return Semantics(
+      button: true,
+      container: true,
+      excludeSemantics: true,
+      label: price == null
+          ? cell.name
+          : '${cell.name} ${GameRules.credits(price)}',
+      child: Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
@@ -73,6 +81,7 @@ class BoardCellWidget extends StatelessWidget {
               return Stack(
                 fit: StackFit.expand,
                 children: [
+                  CellArtwork(cell: cell),
                   if (mortgaged) const CustomPaint(painter: _MortgageHatch()),
                   if (property != null)
                     _ColorBand(
@@ -80,45 +89,31 @@ class BoardCellWidget extends StatelessWidget {
                       onTop: bandOnTop,
                       thickness: band,
                     ),
-                  Padding(
-                    padding: EdgeInsets.only(
-                      top: property != null && bandOnTop ? band + 1 : 2,
-                      bottom: property != null && !bandOnTop ? band + 1 : 2,
-                      left: 2,
-                      right: 2,
-                    ),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            _shortLabel(cell, stringsOf(context)),
+                  if (price != null && !mortgaged)
+                    Align(
+                      alignment: bandOnTop
+                          ? Alignment.bottomCenter
+                          : Alignment.topCenter,
+                      child: ColoredBox(
+                        color: CyberColors.voidBlack.withValues(alpha: 0.62),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: Text(
+                            GameRules.credits(price),
                             textAlign: TextAlign.center,
                             style: GoogleFonts.shareTechMono(
-                              fontSize: labelSize,
+                              fontSize: priceSize,
                               fontWeight: FontWeight.w700,
                               height: 1.05,
-                              color: CyberColors.textPrimary,
-                              letterSpacing: 0.2,
+                              color: CyberColors.cyberYellow,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
                             ),
                           ),
-                          if (cell.priceOrNull != null)
-                            Text(
-                              GameRules.credits(cell.priceOrNull!),
-                              style: GoogleFonts.shareTechMono(
-                                fontSize: priceSize,
-                                fontWeight: FontWeight.w700,
-                                color: CyberColors.cyberYellow,
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
                   if (property != null && property.houses > 0)
                     _DevMarks(
                       houses: property.houses,
@@ -144,6 +139,7 @@ class BoardCellWidget extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 
@@ -155,34 +151,6 @@ class BoardCellWidget extends StatelessWidget {
     return true;
   }
 
-  /// Short code sized to a cell. The full street name lives on the deed sheet.
-  static String _shortLabel(BoardCell cell, AppStrings s) {
-    return switch (cell) {
-      SpecialCell(:final kind) => switch (kind) {
-          SpecialKind.go => s.pick('CYCLE\nRESET', 'СТАРТ'),
-          SpecialKind.jail => s.pick('ICE\nLOCK', 'ICE\nВ\'ЯЗН'),
-          SpecialKind.freeParking => s.pick('SAFE\nZONE', 'ТИХА\nЗОНА'),
-          SpecialKind.goToJail => s.pick('DETENTION', 'АРЕШТ'),
-          SpecialKind.chance => s.pick('DATA\nBREACH', 'ВИТІК\nДАНИХ'),
-          SpecialKind.communityChest => s.pick('CORPO\nBOUNTY', 'КОРПО\nПРИЗ'),
-        },
-      TaxCell(:final name) => name.contains('LUXURY')
-          ? s.pick('LUXURY\nLEVY', 'ЛЮКС\nЗБІР')
-          : s.pick('NET\nTARIFF', 'ТАРИФ'),
-      RailroadCell(:final name) => name
-          .replaceFirst('MAGLEV STATION ', s.pick('MAGLEV\n', 'МАГЛЕВ\n')),
-      UtilityCell(:final name) => name.split(' ').take(2).join('\n'),
-      PropertyCell(:final name) => _streetCode(name),
-    };
-  }
-
-  static String _streetCode(String name) {
-    final words =
-        name.split(RegExp(r'[\s\-]+')).where((w) => w.isNotEmpty).toList();
-    if (words.isEmpty) return name;
-    final word = words.first.toUpperCase();
-    return word.length <= 6 ? word : word.substring(0, 6);
-  }
 }
 
 class _ColorBand extends StatelessWidget {

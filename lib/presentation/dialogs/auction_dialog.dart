@@ -8,7 +8,9 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
 import '../../logic/nightfall.dart';
+import '../../models/cell.dart';
 import '../../models/pending_action.dart';
+import '../board/cell_art.dart';
 import 'cyber_dialog_frame.dart';
 
 /// One auction dialog for the whole lot. It follows the live bid instead of
@@ -55,6 +57,7 @@ class _LiveAuctionDialogState extends ConsumerState<_LiveAuctionDialog> {
     final canAct = bidder != null && !bidder.isAi;
 
     return _AuctionBody(
+      cell: state.board[pending.cellIndex],
       auction: pending,
       floor: Nightfall.minAuctionBid(pending.highestBid),
       actorName: bidder?.name ?? pending.currentBidderId,
@@ -73,6 +76,7 @@ class _LiveAuctionDialogState extends ConsumerState<_LiveAuctionDialog> {
 
 class _AuctionBody extends StatefulWidget {
   const _AuctionBody({
+    required this.cell,
     required this.auction,
     required this.floor,
     required this.actorName,
@@ -83,6 +87,7 @@ class _AuctionBody extends StatefulWidget {
     required this.onPass,
   });
 
+  final BoardCell cell;
   final PendingAuction auction;
   final int floor;
   final String actorName;
@@ -145,6 +150,12 @@ class _AuctionBodyState extends State<_AuctionBody> {
               fontWeight: FontWeight.w800,
               letterSpacing: 2,
             ),
+          ),
+          const SizedBox(height: 8),
+          CellPortrait(
+            cell: widget.cell,
+            height: 120,
+            showCaption: false,
           ),
           const SizedBox(height: 8),
           Text(
