@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:monopoly/core/constants/game_factory.dart';
 import 'package:monopoly/core/constants/game_rules.dart';
 import 'package:monopoly/logic/game_controller.dart';
+import 'package:monopoly/logic/nightfall.dart';
 import 'package:monopoly/models/cell.dart';
 import 'package:monopoly/models/game_state.dart';
 import 'package:monopoly/models/pending_action.dart';
@@ -232,6 +233,8 @@ void main() {
     );
 
     expect(c.buildHouse(1), isTrue);
+    expect(c.buildHouse(1), isFalse);
+    expect((c.state.board[1] as PropertyCell).houses, 1);
     expect(c.state.players.first.balance, 500 - 25);
     expect((c.state.board[1] as PropertyCell).houses, 1);
     expect(c.state.housesInBank, GameRules.housesInSupply - 1);
@@ -282,5 +285,31 @@ void main() {
     if (again is PendingAuction) {
       expect(again.passedIds, contains(bidder));
     }
+  });
+
+  test('a lone street cannot take a rack even with cash on the cell', () {
+    final c = controllerWith(rolls: [(1, 1)]);
+    final me = c.state.players.first;
+    final board = [...c.state.board];
+    board[8] = (board[8] as PropertyCell).copyWith(ownerId: me.id);
+    c.state = c.state.copyWith(
+      board: board,
+      players: [
+        me.copyWith(propertyIndexes: [8], balance: 1400, position: 8),
+        c.state.players[1],
+      ],
+    );
+
+    expect(c.buildHouse(8), isFalse);
+    expect((c.state.board[8] as PropertyCell).houses, 0);
+    final reason = Nightfall.rackBuildBlock(
+      state: c.state,
+      cell: c.state.board[8] as PropertyCell,
+      player: c.state.players.first,
+    );
+    expect(reason, contains('does not matter'));
+    expect(reason, contains('Watson Hub'));
+    expect(reason, contains('Little China Node'));
+    expect(reason, contains('Watson Transit Hub'));
   });
 }

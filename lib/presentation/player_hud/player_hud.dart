@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/l10n/app_lang.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
 import '../../models/cell.dart';
@@ -13,6 +15,7 @@ class PlayerHud extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(appLangProvider);
     final state = ref.watch(gameControllerProvider);
 
     return Container(
@@ -69,6 +72,7 @@ class _PlayerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = stringsOf(context);
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
@@ -104,8 +108,8 @@ class _PlayerCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '${player.name}${player.isAi ? ' (ШІ · ${player.aiProfile?.labelUk ?? 'бот'})' : ''}'
-                    '${player.isBankrupt ? ' — БАНКРУТ' : ''}'
+                    '${player.name}${player.isAi ? ' (${s.aiTag(player.aiProfile)})' : ''}'
+                    '${player.isBankrupt ? ' — ${s.bankrupt}' : ''}'
                     '${player.inJail ? ' 🔒' : ''}',
                     style: TextStyle(
                       fontWeight: active ? FontWeight.w800 : FontWeight.w600,
@@ -145,10 +149,10 @@ class _PlayerCard extends StatelessWidget {
                 ],
               ),
             ] else
-              const Padding(
-                padding: EdgeInsets.only(top: 4),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  'Немає власності',
+                  s.noHoldings,
                   style: TextStyle(fontSize: 11, color: CyberColors.textMuted),
                 ),
               ),

@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/l10n/app_lang.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
 import '../../logic/network/lobby_controller.dart';
@@ -10,15 +12,9 @@ import '../../logic/network/network_action.dart';
 import '../../logic/network/network_providers.dart';
 import '../../models/player.dart';
 import '../shell/game_shell_page.dart';
+import '../widgets/lang_switch.dart';
 
 extension NeonTokenX on TokenColor {
-  String get neonHandle => switch (this) {
-        TokenColor.red => 'CRIMSON ICE',
-        TokenColor.blue => 'NEON CYAN',
-        TokenColor.green => 'TOXIC GRID',
-        TokenColor.yellow => 'CORPO GOLD',
-      };
-
   Color get neonPaint => switch (this) {
         TokenColor.red => CyberColors.neonMagenta,
         TokenColor.blue => CyberColors.neonCyan,
@@ -107,7 +103,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
       SnackBar(
         backgroundColor: CyberColors.panel,
         content: Text(
-          'LINK COPIED FOR CHUMS',
+          stringsOf(context).linkCopied,
           style: GoogleFonts.shareTechMono(color: CyberColors.terminalGreen),
         ),
       ),
@@ -123,6 +119,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
       }
     });
 
+    ref.watch(appLangProvider);
     final lobby = ref.watch(lobbyControllerProvider);
 
     return Scaffold(
@@ -140,13 +137,22 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
           ),
         ),
         child: SafeArea(
-          child: Center(
+          child: Stack(
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(12, 8, 12, 0),
+                  child: LangSwitch(),
+                ),
+              ),
+              Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 560),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: switch (lobby.phase) {
-                  LobbyPhase.connecting => const _ConnectingPane(),
+                  LobbyPhase.connecting => _ConnectingPane(),
                   LobbyPhase.room || LobbyPhase.starting => _RoomPane(
                       lobby: lobby,
                       onCopy: _copyInvite,
@@ -190,6 +196,8 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
               ),
             ),
           ),
+            ],
+          ),
         ),
       ),
     );
@@ -201,13 +209,14 @@ class _ConnectingPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = stringsOf(context);
     return CyberTheme.glass(
       glowColor: CyberColors.neonCyan,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'ESTABLISHING UPLINK…',
+            s.connecting,
             style: GoogleFonts.orbitron(
               color: CyberColors.neonCyan,
               fontWeight: FontWeight.w700,
@@ -248,6 +257,7 @@ class _EntryPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = stringsOf(context);
     return SingleChildScrollView(
       child: CyberTheme.glass(
         glowColor: CyberColors.neonMagenta,
@@ -273,7 +283,7 @@ class _EntryPane extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'MULTIPLAYER LOBBY · PEER-HOST',
+              s.lobbyTag,
               textAlign: TextAlign.center,
               style: GoogleFonts.shareTechMono(
                 color: CyberColors.textMuted,
@@ -284,7 +294,7 @@ class _EntryPane extends StatelessWidget {
             if (lobby.errorMessage != null) ...[
               const SizedBox(height: 12),
               Text(
-                lobby.errorMessage!,
+                s.lobbyError(lobby.errorMessage!),
                 textAlign: TextAlign.center,
                 style: GoogleFonts.shareTechMono(
                   color: CyberColors.neonMagenta,
@@ -294,7 +304,7 @@ class _EntryPane extends StatelessWidget {
             ],
             const SizedBox(height: 20),
             Text(
-              'CALLSIGN',
+              s.callsign,
               style: GoogleFonts.shareTechMono(
                 color: CyberColors.cyberYellow,
                 fontSize: 11,
@@ -329,7 +339,7 @@ class _EntryPane extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'NEON TOKEN',
+              s.neonToken,
               style: GoogleFonts.shareTechMono(
                 color: CyberColors.cyberYellow,
                 fontSize: 11,
@@ -379,7 +389,7 @@ class _EntryPane extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          c.neonHandle,
+                          s.tokenName(c.name),
                           style: GoogleFonts.shareTechMono(
                             color: CyberColors.textPrimary,
                             fontSize: 11,
@@ -395,11 +405,11 @@ class _EntryPane extends StatelessWidget {
             FilledButton.icon(
               onPressed: onCreate,
               icon: const Icon(Icons.add_link),
-              label: const Text('OPEN NEW NODE'),
+              label: Text(s.openNode),
             ),
             const SizedBox(height: 16),
             Text(
-              'OR JACK INTO EXISTING ROOM',
+              s.orJoin,
               textAlign: TextAlign.center,
               style: GoogleFonts.shareTechMono(
                 color: CyberColors.textMuted,
@@ -427,7 +437,7 @@ class _EntryPane extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onJoin,
               icon: const Icon(Icons.lan),
-              label: const Text('JOIN ROOM'),
+              label: Text(s.joinRoom),
               style: OutlinedButton.styleFrom(
                 foregroundColor: CyberColors.cyberYellow,
                 side: const BorderSide(color: CyberColors.cyberYellow),
@@ -437,7 +447,7 @@ class _EntryPane extends StatelessWidget {
             TextButton(
               onPressed: onSolo,
               child: Text(
-                'SOLO OFFLINE PROTOCOL →',
+                s.solo,
                 style: GoogleFonts.shareTechMono(
                   color: CyberColors.textMuted,
                   fontSize: 12,
@@ -468,6 +478,7 @@ class _RoomPane extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = stringsOf(context);
     final slots = List<PresenceMember?>.filled(LobbyController.maxPlayers, null);
     for (var i = 0; i < lobby.members.length && i < slots.length; i++) {
       slots[i] = lobby.members[i];
@@ -483,7 +494,7 @@ class _RoomPane extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'WAITING HALL',
+              s.waitingHall,
               textAlign: TextAlign.center,
               style: GoogleFonts.orbitron(
                 color: CyberColors.neonCyan,
@@ -494,7 +505,7 @@ class _RoomPane extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'ROOM ${lobby.roomCode ?? '—'}',
+              s.roomCode(lobby.roomCode ?? '—'),
               textAlign: TextAlign.center,
               style: GoogleFonts.shareTechMono(
                 color: CyberColors.cyberYellow,
@@ -506,7 +517,7 @@ class _RoomPane extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
-                  'YOU ARE THE COORDINATOR',
+                  s.youCoordinate,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.shareTechMono(
                     color: CyberColors.terminalGreen,
@@ -518,7 +529,7 @@ class _RoomPane extends StatelessWidget {
             FilledButton.tonalIcon(
               onPressed: onCopy,
               icon: const Icon(Icons.copy_all),
-              label: const Text('СКОПІЮВАТИ ЛІНК ДЛЯ ЧУМБ'),
+              label: Text(s.copyLink),
               style: FilledButton.styleFrom(
                 backgroundColor: CyberColors.panelElevated,
                 foregroundColor: CyberColors.neonCyan,
@@ -537,7 +548,7 @@ class _RoomPane extends StatelessWidget {
             ],
             const SizedBox(height: 20),
             Text(
-              'OPERATIVES  ${lobby.occupiedSlots}/${LobbyController.maxPlayers}',
+              s.operativesCount(lobby.occupiedSlots, LobbyController.maxPlayers),
               style: GoogleFonts.shareTechMono(
                 color: CyberColors.cyberYellow,
                 fontSize: 12,
@@ -548,7 +559,7 @@ class _RoomPane extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
-                  'WARNING · ROOM OVER CAPACITY',
+                  s.overCapacity,
                   style: GoogleFonts.shareTechMono(
                     color: CyberColors.neonMagenta,
                     fontSize: 11,
@@ -569,7 +580,7 @@ class _RoomPane extends StatelessWidget {
               icon: Icon(
                 lobby.ready ? Icons.check_circle : Icons.radio_button_unchecked,
               ),
-              label: Text(lobby.ready ? 'READY' : 'MARK READY'),
+              label: Text(lobby.ready ? s.ready : s.markReady),
               style: OutlinedButton.styleFrom(
                 foregroundColor: lobby.ready
                     ? CyberColors.terminalGreen
@@ -585,13 +596,13 @@ class _RoomPane extends StatelessWidget {
             FilledButton.icon(
               onPressed: lobby.canStart ? onStart : null,
               icon: const Icon(Icons.rocket_launch),
-              label: const Text('ЗАПУСТИТИ ПОГЛИНАННЯ'),
+              label: Text(s.launch),
             ),
             if (!lobby.isHost)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  'WAITING FOR HOST TO LAUNCH…',
+                  s.waitingHost,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.shareTechMono(
                     color: CyberColors.textMuted,
@@ -603,7 +614,7 @@ class _RoomPane extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  'NEED ≥${LobbyController.minPlayers} OPERATIVES',
+                  s.needOperatives(LobbyController.minPlayers),
                   textAlign: TextAlign.center,
                   style: GoogleFonts.shareTechMono(
                     color: CyberColors.textMuted,
@@ -614,7 +625,7 @@ class _RoomPane extends StatelessWidget {
             TextButton(
               onPressed: onLeave,
               child: Text(
-                'DISCONNECT',
+                s.disconnect,
                 style: GoogleFonts.shareTechMono(
                   color: CyberColors.neonMagenta,
                   fontSize: 12,
@@ -636,6 +647,7 @@ class _SlotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = stringsOf(context);
     final empty = member == null;
     final token = empty
         ? null
@@ -675,7 +687,7 @@ class _SlotCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  empty ? 'SLOT $index · EMPTY' : member!.name,
+                  empty ? s.slotEmpty(index) : member!.name,
                   style: GoogleFonts.rajdhani(
                     color: CyberColors.textPrimary,
                     fontWeight: FontWeight.w700,
@@ -684,11 +696,11 @@ class _SlotCard extends StatelessWidget {
                 ),
                 Text(
                   empty
-                      ? 'AWAITING SIGNAL'
+                      ? s.awaitingSignal
                       : [
-                          if (member!.isHost) 'HOST',
-                          if (member!.ready) 'READY',
-                          if (!member!.ready) 'STANDBY',
+                          if (member!.isHost) s.hostTag,
+                          if (member!.ready) s.ready,
+                          if (!member!.ready) s.standby,
                         ].join(' · '),
                   style: GoogleFonts.shareTechMono(
                     color: member?.ready == true

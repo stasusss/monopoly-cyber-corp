@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/l10n/app_lang.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
 
@@ -10,6 +12,7 @@ class EventLogDrawer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppStrings(ref.watch(appLangProvider));
     final log = ref.watch(gameControllerProvider.select((s) => s.log));
 
     return Drawer(
@@ -21,7 +24,7 @@ class EventLogDrawer extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'EVENT STREAM',
+                s.eventStream,
                 style: GoogleFonts.orbitron(
                   color: CyberColors.terminalGreen,
                   fontWeight: FontWeight.w700,

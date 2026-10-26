@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/app_lang.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
 import '../../models/game_state.dart';
@@ -59,6 +60,7 @@ class _MonopolyBoardState extends ConsumerState<MonopolyBoard> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(appLangProvider);
     final state = ref.watch(gameControllerProvider);
     final controller = ref.read(gameControllerProvider.notifier);
     final wide =
@@ -124,8 +126,16 @@ class _MonopolyBoardState extends ConsumerState<MonopolyBoard> {
                         ..._buildCells(state, size),
                         _buildCenter(size, state, controller, wide),
                         ..._buildTokens(state, size),
-                        const CyberDialogueBubble(),
-                        const SignalLostBanner(),
+                        _overlayInCenter(
+                          size,
+                          alignTop: true,
+                          child: const CyberDialogueBubble(),
+                        ),
+                        _overlayInCenter(
+                          size,
+                          alignTop: false,
+                          child: const SignalLostBanner(),
+                        ),
                       ],
                     ),
                   ),
@@ -171,6 +181,21 @@ class _MonopolyBoardState extends ConsumerState<MonopolyBoard> {
           ),
         ),
     ];
+  }
+
+  Widget _overlayInCenter(
+    Size size, {
+    required bool alignTop,
+    required Widget child,
+  }) {
+    final cell = size.width / BoardGeometry.gridSize;
+    return Positioned(
+      left: cell + 8,
+      right: cell + 8,
+      top: alignTop ? cell + 8 : null,
+      bottom: alignTop ? null : cell + 8,
+      child: child,
+    );
   }
 
   Widget _buildCenter(
@@ -227,13 +252,15 @@ class _MonopolyBoardState extends ConsumerState<MonopolyBoard> {
             top: center.dy - tokenSize / 2,
             width: tokenSize,
             height: tokenSize,
-            child: _TokenChip(
-              player: p,
-              highlighted: isActive,
-              rentFlash: paying || collecting,
-              flashColor: paying
-                  ? CyberColors.neonMagenta
-                  : CyberColors.terminalGreen,
+            child: IgnorePointer(
+              child: _TokenChip(
+                player: p,
+                highlighted: isActive,
+                rentFlash: paying || collecting,
+                flashColor: paying
+                    ? CyberColors.neonMagenta
+                    : CyberColors.terminalGreen,
+              ),
             ),
           ),
         );

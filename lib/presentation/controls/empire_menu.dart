@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/game_rules.dart';
+import '../../core/l10n/app_lang.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../logic/game_controller.dart';
 import '../../logic/nightfall.dart';
 import '../../models/game_state.dart';
@@ -14,6 +16,7 @@ class EmpireMenu extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppStrings(ref.watch(appLangProvider));
     final state = ref.watch(gameControllerProvider);
     final controller = ref.read(gameControllerProvider.notifier);
     final open = _open(state, controller);
@@ -35,7 +38,7 @@ class EmpireMenu extends ConsumerWidget {
         if (canTrade)
           _btn(
             context,
-            'TRADE',
+            s.trade,
             () async {
               final offer = await showTradeComposer(
                 context,
@@ -49,17 +52,17 @@ class EmpireMenu extends ConsumerWidget {
         if (!me.overdraftUsed && loan > 0)
           _btn(
             context,
-            'LOAN ${GameRules.credits(loan)}',
+            s.loan(GameRules.credits(loan)),
             controller.drawOverdraft,
           ),
         if (!me.buyoutUsed && claims.isNotEmpty)
-          _btn(context, 'CLAIM', controller.requestClaim),
+          _btn(context, s.claim, controller.requestClaim),
         if (me.inJail &&
             me.getOutOfJailCards > 0 &&
             state.phase == TurnPhase.waitingForRoll)
           _btn(
             context,
-            'NULLIFIER ×${me.getOutOfJailCards}',
+            s.nullifier(me.getOutOfJailCards),
             controller.useJailCard,
           ),
       ],

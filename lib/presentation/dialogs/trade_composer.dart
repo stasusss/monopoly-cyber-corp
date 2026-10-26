@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/trade/trade_manager.dart';
 import '../../models/cell.dart';
@@ -80,6 +81,7 @@ class _ComposerState extends State<_Composer> {
 
   @override
   Widget build(BuildContext context) {
+    final s = stringsOf(context);
     return CyberDialogFrame(
       glowColor: CyberColors.neonCyan,
       maxWidth: 420,
@@ -87,7 +89,7 @@ class _ComposerState extends State<_Composer> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'TRADE PROTOCOL',
+            s.tradeProtocol,
             style: GoogleFonts.orbitron(
               color: CyberColors.neonCyan,
               fontWeight: FontWeight.w800,
@@ -111,15 +113,15 @@ class _ComposerState extends State<_Composer> {
             },
           ),
           const SizedBox(height: 8),
-          Text('YOU GIVE', style: GoogleFonts.shareTechMono(fontSize: 12)),
-          _cashField(_offerCash, 'Offer cash'),
+          Text(s.youGive, style: GoogleFonts.shareTechMono(fontSize: 12)),
+          _cashField(_offerCash, s.offerCash),
           _checks(widget.from.propertyIndexes, _offer),
           const SizedBox(height: 8),
           Text(
-            '${_to.name.toUpperCase()} GIVES',
+            s.gives(_to.name),
             style: GoogleFonts.shareTechMono(fontSize: 12),
           ),
-          _cashField(_requestCash, 'Request cash'),
+          _cashField(_requestCash, s.requestCash),
           _checks(_to.propertyIndexes, _request),
         ],
       ),
@@ -128,14 +130,14 @@ class _ComposerState extends State<_Composer> {
           Expanded(
             child: OutlinedButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('CANCEL'),
+              child: Text(s.cancel),
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: FilledButton(
               onPressed: _send,
-              child: const Text('SEND'),
+              child: Text(s.send),
             ),
           ),
         ],
@@ -157,7 +159,7 @@ class _ComposerState extends State<_Composer> {
     final tradable = indexes.where(_tradable).toList();
     if (tradable.isEmpty) {
       return Text(
-        'No bare assets',
+        stringsOf(context).noProperties,
         style: GoogleFonts.shareTechMono(
           color: CyberColors.textMuted,
           fontSize: 12,

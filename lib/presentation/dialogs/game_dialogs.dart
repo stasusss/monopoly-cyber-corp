@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/game_rules.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
 import '../../logic/nightfall.dart';
@@ -114,19 +115,21 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
         final buy = await showDialog<bool>(
           context: context,
           barrierDismissible: false,
-          builder: (ctx) => CyberDialogFrame(
+          builder: (ctx) {
+            final s = stringsOf(ctx);
+            return CyberDialogFrame(
             glowColor: CyberColors.terminalGreen,
             body: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'HOLOGRAPHIC DEED',
+                  s.holographicDeed,
                   style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                         color: CyberColors.neonCyan,
                       ),
                 ),
                 const SizedBox(height: 8),
-                Text('Claim «${a.propertyName}»?'),
+                Text(s.claimAsk(a.propertyName)),
                 const SizedBox(height: 6),
                 Text(
                   GameRules.credits(a.price),
@@ -136,7 +139,7 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'YOUR STACK ${GameRules.credits(stack)}',
+                  s.yourStack(GameRules.credits(stack)),
                   style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
                         color: CyberColors.terminalGreen,
                       ),
@@ -148,19 +151,20 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('DECLINE'),
+                    child: Text(s.decline),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: FilledButton(
                     onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('ACQUIRE'),
+                    child: Text(s.acquire),
                   ),
                 ),
               ],
             ),
-          ),
+          );
+          },
         );
         if (buy == true) {
           controller.acceptBuy();
@@ -171,37 +175,45 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
       rentNotice: (a) async {
         await showDialog<void>(
           context: context,
-          builder: (ctx) => AlertDialog(
-            title: const Text('RENT EXTRACTED'),
+          builder: (ctx) {
+            final s = stringsOf(ctx);
+            return AlertDialog(
+            title: Text(s.rentExtracted),
             content: Text(
-              '${a.payerName} → ${GameRules.credits(a.amount)} → ${a.ownerName}\n'
-              'node: «${a.propertyName}»',
+              s.rentBody(
+                a.payerName,
+                GameRules.credits(a.amount),
+                a.ownerName,
+                a.propertyName,
+              ),
             ),
             actions: [
               FilledButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('ACK'),
+                child: Text(s.ack),
               ),
             ],
-          ),
+          );
+          },
         );
         controller.dismissNotice();
       },
       taxNotice: (a) async {
         await showDialog<void>(
           context: context,
-          builder: (ctx) => AlertDialog(
+          builder: (ctx) {
+            final s = stringsOf(ctx);
+            return AlertDialog(
             title: Text(a.taxName),
-            content: Text(
-              '${a.playerName} transfers ${GameRules.credits(a.amount)} to the Bank.',
-            ),
+            content: Text(s.taxBody(a.playerName, GameRules.credits(a.amount))),
             actions: [
               FilledButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('ACK'),
+                child: Text(s.ack),
               ),
             ],
-          ),
+          );
+          },
         );
         controller.dismissNotice();
       },
@@ -239,21 +251,21 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
         final choice = await showDialog<int>(
           context: context,
           barrierDismissible: false,
-          builder: (ctx) => CyberDialogFrame(
+          builder: (ctx) {
+            final s = stringsOf(ctx);
+            return CyberDialogFrame(
             glowColor: CyberColors.neonMagenta,
             body: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'EMINENT DOMAIN',
+                  s.eminentDomain,
                   style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
                         color: CyberColors.neonMagenta,
                       ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Seize one exposed street for 120% of list price.',
-                ),
+                Text(s.seizeHint),
                 const SizedBox(height: 8),
                 for (final index in a.cellIndexes)
                   Padding(
@@ -275,9 +287,10 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
             ),
             actions: OutlinedButton(
               onPressed: () => Navigator.pop(ctx, -1),
-              child: const Text('DECLINE'),
+              child: Text(s.decline),
             ),
-          ),
+          );
+          },
         );
         if (choice != null && choice >= 0) {
           controller.acceptClaim(choice);
@@ -289,11 +302,12 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
         await showDialog<void>(
           context: context,
           barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            title: const Text('PROTOCOL COMPLETE'),
+          builder: (ctx) {
+            final s = stringsOf(ctx);
+            return AlertDialog(
+            title: Text(s.protocolComplete),
             content: Text(
-              'Controlling interest: ${a.playerName}\n'
-              'NET ${GameRules.credits(a.netWorth)}',
+              s.winnerBody(a.playerName, GameRules.credits(a.netWorth)),
             ),
             actions: [
               FilledButton(
@@ -301,10 +315,11 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
                   Navigator.pop(ctx);
                   controller.restart();
                 },
-                child: const Text('REBOOT'),
+                child: Text(s.reboot),
               ),
             ],
-          ),
+          );
+          },
         );
       },
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/game_rules.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../models/game_state.dart';
 import '../../models/pending_action.dart';
@@ -49,6 +50,7 @@ class BoardCenterPanel extends StatelessWidget {
         state.phase == TurnPhase.waitingForRoll &&
         !state.isGameOver;
     final lastLine = state.log.isEmpty ? null : state.log.last;
+    final s = stringsOf(context);
 
     final body = Column(
           mainAxisSize: showActions ? MainAxisSize.max : MainAxisSize.min,
@@ -65,7 +67,7 @@ class BoardCenterPanel extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                CyberLore.appSubtitle,
+                s.appSubtitle,
                 style: const TextStyle(
                   color: CyberColors.textMuted,
                   fontSize: 11,
@@ -75,8 +77,12 @@ class BoardCenterPanel extends StatelessWidget {
               const SizedBox(height: 4),
             ],
             Text(
-              'ROUND ${state.round}/${GameRules.blitzRoundLimit}'
-              ' · RACKS ${state.housesInBank} · HQ ${state.hotelsInBank}',
+              s.roundLine(
+                state.round,
+                GameRules.blitzRoundLimit,
+                state.housesInBank,
+                state.hotelsInBank,
+              ),
               textAlign: TextAlign.center,
               style: GoogleFonts.shareTechMono(
                 color: CyberColors.textMuted,
@@ -85,8 +91,7 @@ class BoardCenterPanel extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'ACTIVE: ${state.activePlayer.name}'
-              '${inJail ? ' · ICE LOCK' : ''}',
+              s.activeLine(state.activePlayer.name, inJail),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -123,7 +128,7 @@ class BoardCenterPanel extends StatelessWidget {
                     pulse: canRoll,
                     onPressed: canRoll ? onRoll : null,
                     icon: Icons.casino,
-                    label: 'ROLL',
+                    label: s.roll,
                   ),
                   if (inJail && state.phase == TurnPhase.waitingForRoll)
                     TurnActionButton(
@@ -132,7 +137,7 @@ class BoardCenterPanel extends StatelessWidget {
                       pulseColor: CyberColors.cyberYellow,
                       onPressed: canBail ? onPayJailFine : null,
                       icon: Icons.lock_open,
-                      label: 'BAIL ${GameRules.credits(GameRules.jailFine)}',
+                      label: s.bail(GameRules.credits(GameRules.jailFine)),
                     ),
                   TurnActionButton(
                     primary: false,
@@ -140,7 +145,7 @@ class BoardCenterPanel extends StatelessWidget {
                     pulseColor: CyberColors.cyberYellow,
                     onPressed: canEnd ? onEndTurn : null,
                     icon: Icons.flag,
-                    label: 'END TURN',
+                    label: s.endTurn,
                   ),
                 ],
               ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import 'cyber_dialog_frame.dart';
 
@@ -13,13 +14,19 @@ Future<void> showCyberCardDialog(
   return showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (ctx) => CyberDialogFrame(
+    builder: (ctx) {
+      final s = stringsOf(ctx);
+      final presented = s.presentCard(title, description);
+      final split = presented.indexOf('\n');
+      final localTitle = split == -1 ? presented : presented.substring(0, split);
+      final localBody = split == -1 ? '' : presented.substring(split + 1);
+      return CyberDialogFrame(
       glowColor: breach ? CyberColors.cyberYellow : CyberColors.terminalGreen,
       maxWidth: 360,
       body: Column(
         children: [
           Text(
-            title,
+            localTitle,
             textAlign: TextAlign.center,
             style: GoogleFonts.orbitron(
               color: CyberColors.neonCyan,
@@ -30,7 +37,7 @@ Future<void> showCyberCardDialog(
           ),
           const SizedBox(height: 12),
           Text(
-            description,
+            localBody,
             textAlign: TextAlign.center,
             style: GoogleFonts.rajdhani(
               color: CyberColors.textPrimary,
@@ -42,8 +49,9 @@ Future<void> showCyberCardDialog(
       ),
       actions: FilledButton(
         onPressed: () => Navigator.pop(ctx),
-        child: const Text('ACKNOWLEDGE'),
+        child: Text(s.acknowledge),
       ),
-    ),
+    );
+    },
   );
 }

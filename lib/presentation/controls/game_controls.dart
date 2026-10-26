@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/game_rules.dart';
+import '../../core/l10n/app_lang.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
 import '../../models/game_state.dart';
@@ -15,6 +17,7 @@ class GameControlsBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppStrings(ref.watch(appLangProvider));
     final state = ref.watch(gameControllerProvider);
     final c = ref.read(gameControllerProvider.notifier);
     final idle = state.pendingAction is PendingNone;
@@ -48,7 +51,7 @@ class GameControlsBar extends ConsumerWidget {
               pulse: canRoll,
               onPressed: canRoll ? c.rollDice : null,
               icon: Icons.casino,
-              label: 'ROLL',
+              label: s.roll,
             ),
           ),
           if (state.activePlayer.inJail &&
@@ -61,7 +64,7 @@ class GameControlsBar extends ConsumerWidget {
                 pulseColor: CyberColors.cyberYellow,
                 onPressed: canBail ? c.payJailFine : null,
                 icon: Icons.lock_open,
-                label: 'BAIL ${GameRules.credits(GameRules.jailFine)}',
+                label: s.bail(GameRules.credits(GameRules.jailFine)),
               ),
             ),
           ],
@@ -73,7 +76,7 @@ class GameControlsBar extends ConsumerWidget {
               pulseColor: CyberColors.cyberYellow,
               onPressed: canEnd ? c.endTurn : null,
               icon: Icons.flag,
-              label: 'END',
+              label: s.endShort,
             ),
           ),
         ],

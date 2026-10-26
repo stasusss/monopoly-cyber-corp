@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,6 +20,14 @@ class CyberDialogueBubble extends ConsumerStatefulWidget {
 class _CyberDialogueBubbleState extends ConsumerState<CyberDialogueBubble> {
   String _visible = '';
   String? _lastFull;
+  String? _dismissed;
+  Timer? _hide;
+
+  @override
+  void dispose() {
+    _hide?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +35,7 @@ class _CyberDialogueBubbleState extends ConsumerState<CyberDialogueBubble> {
     final line = state.aiDialogue;
     final speakerId = state.aiDialogueSpeakerId;
 
-    if (line == null || line.isEmpty || speakerId == null) {
+    if (line == null || line.isEmpty || speakerId == null || line == _dismissed) {
       return const SizedBox.shrink();
     }
 
@@ -33,6 +43,12 @@ class _CyberDialogueBubbleState extends ConsumerState<CyberDialogueBubble> {
       _lastFull = line;
       _visible = '';
       _type(line);
+      _hide?.cancel();
+      final hold = Duration(milliseconds: line.length * 16 + 3200);
+      _hide = Timer(hold, () {
+        if (!mounted || _lastFull != line) return;
+        setState(() => _dismissed = line);
+      });
     }
 
     Player? speaker;
@@ -43,11 +59,9 @@ class _CyberDialogueBubbleState extends ConsumerState<CyberDialogueBubble> {
 
     final ink = speaker.tokenColor.ink;
     return IgnorePointer(
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 6, left: 12, right: 12),
-          child: DecoratedBox(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: DecoratedBox(
             decoration: BoxDecoration(
               color: CyberColors.deepIndigo.withValues(alpha: 0.96),
               borderRadius: BorderRadius.circular(8),
@@ -110,7 +124,6 @@ class _CyberDialogueBubbleState extends ConsumerState<CyberDialogueBubble> {
             ),
           ),
         ),
-      ),
     );
   }
 

@@ -1,5 +1,7 @@
 import '../core/constants/game_rules.dart';
 import '../core/constants/street_colors.dart';
+import '../core/l10n/app_lang.dart';
+import '../core/l10n/app_strings.dart';
 import '../models/cell.dart';
 import '../models/game_state.dart';
 import '../models/player.dart';
@@ -82,6 +84,103 @@ abstract final class Nightfall {
 
   static bool cellSuppressed(GameState state, int index) =>
       state.suppressedCells.contains(index);
+
+  /// Why [player] cannot install the next rack on [cell]. Null when the build
+  /// is legal. Standing on the cell is never part of this check.
+  static String? rackBuildBlock({
+    required GameState state,
+    required PropertyCell cell,
+    required Player player,
+    AppStrings strings = const AppStrings(AppLang.en),
+  }) {
+    if (cell.ownerId != player.id) return strings.notYourNode;
+    if (cell.isMortgaged) return strings.liftBeforeRack;
+    if (cell.houses >= 5) return strings.hqOnline;
+
+    final streets = _district(state, cell.colorGroup);
+    final district = strings.districtName(cell.colorGroup);
+    final monopoly = streets.length == cell.colorGroup.propertyCount &&
+        streets.every((c) => c.ownerId == player.id && !c.isMortgaged);
+    if (!monopoly) {
+      final gaps = <String>[];
+      for (final street in streets) {
+        if (street.ownerId == player.id && !street.isMortgaged) continue;
+        if (street.ownerId == player.id && street.isMortgaged) {
+          gaps.add(strings.gapMortgaged(street.name));
+        } else if (street.ownerId == null) {
+          gaps.add(strings.gapUnclaimed(street.name));
+        } else {
+          gaps.add('${street.name} (${_holderName(state, street.ownerId)})');
+        }
+      }
+      return strings.rackStandHint(district, gaps.join(', '));
+    }
+
+    final minHouses =
+        streets.map((c) => c.houses).reduce((a, b) => a < b ? a : b);
+    if (cell.houses > minHouses) {
+      final behind = streets
+          .where((c) => c.houses == minHouses)
+          .map((c) => c.name)
+          .join(', ');
+      return strings.buildEvenly(district, behind);
+    }
+
+    final hotel = cell.houses >= 4;
+    if (hotel && state.hotelsInBank <= 0) return strings.noHqTokens;
+    if (!hotel && state.housesInBank <= 0) return strings.noRacksInBank;
+
+    final cost = nodeCost(cell.colorGroup, cell.houses);
+    if (player.balance < cost) {
+      final short = cost - player.balance;
+      return strings.shortCash(
+        hotel ? strings.hqWord : strings.rackWord,
+        GameRules.credits(cost),
+        GameRules.credits(short),
+      );
+    }
+    return null;
+  }
+
+  /// Why [player] cannot sell one rack on [cell]. Null when the sale is legal.
+  static String? rackSellBlock({
+    required GameState state,
+    required PropertyCell cell,
+    required Player player,
+    AppStrings strings = const AppStrings(AppLang.en),
+  }) {
+    if (cell.ownerId != player.id || cell.houses <= 0) {
+      return strings.nothingToSell;
+    }
+    final owned = _district(state, cell.colorGroup)
+        .where((c) => c.ownerId == player.id)
+        .toList();
+    final maxHouses =
+        owned.map((c) => c.houses).reduce((a, b) => a > b ? a : b);
+    if (cell.houses < maxHouses) {
+      final ahead = owned
+          .where((c) => c.houses == maxHouses)
+          .map((c) => c.name)
+          .join(', ');
+      return strings.sellEvenly(ahead);
+    }
+    if (cell.houses >= 5 && state.housesInBank < 4) return strings.hqNeedsRacks;
+    return null;
+  }
+
+  static List<PropertyCell> _district(GameState state, ColorGroup group) =>
+      state.board
+          .whereType<PropertyCell>()
+          .where((c) => c.colorGroup == group)
+          .toList();
+
+  static String _holderName(GameState state, String? ownerId) {
+    if (ownerId == null) return 'unclaimed';
+    for (final player in state.players) {
+      if (player.id == ownerId) return player.name;
+    }
+    return 'another corp';
+  }
 
   /// Third street of a 3-colour district this player can force-buy.
   static List<int> claimTargets(GameState state, Player player) {

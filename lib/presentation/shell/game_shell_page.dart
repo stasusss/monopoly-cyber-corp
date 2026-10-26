@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/l10n/app_lang.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
 import '../board/monopoly_board.dart';
@@ -10,12 +12,14 @@ import '../dialogs/game_dialogs.dart';
 import '../player_hud/player_hud.dart';
 import '../player_hud/player_strip.dart';
 import '../widgets/dev_debug_overlay.dart';
+import '../widgets/lang_switch.dart';
 
 class GameShellPage extends ConsumerWidget {
   const GameShellPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppStrings(ref.watch(appLangProvider));
     return SelectionContainer.disabled(
       child: GameDialogHost(
         child: DevDebugOverlay(
@@ -27,15 +31,19 @@ class GameShellPage extends ConsumerWidget {
                 child: Text(CyberLore.appTitle),
               ),
               actions: [
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: LangSwitch(),
+                ),
                 IconButton(
-                  tooltip: 'REBOOT SESSION',
+                  tooltip: s.rebootSession,
                   onPressed: () =>
                       ref.read(gameControllerProvider.notifier).restart(),
                   icon: const Icon(Icons.refresh),
                 ),
                 Builder(
                   builder: (ctx) => IconButton(
-                    tooltip: 'OPERATIVES',
+                    tooltip: s.operatives,
                     onPressed: () => Scaffold.of(ctx).openEndDrawer(),
                     icon: const Icon(Icons.groups),
                   ),
@@ -50,7 +58,7 @@ class GameShellPage extends ConsumerWidget {
                   final shortLandscape = view.height <
                           CyberLayout.shortLandscapeHeight &&
                       view.width > view.height;
-                  if (shortLandscape) return const _RotatePrompt();
+                  if (shortLandscape) return _RotatePrompt();
 
                   final isWide =
                       constraints.maxWidth >= CyberLayout.wideBreakpoint;
@@ -85,6 +93,7 @@ class _RotatePrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = stringsOf(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -98,7 +107,7 @@ class _RotatePrompt extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'ROTATE TO PORTRAIT',
+              s.rotateTitle,
               textAlign: TextAlign.center,
               style: GoogleFonts.orbitron(
                 color: CyberColors.neonCyan,
@@ -109,8 +118,7 @@ class _RotatePrompt extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Поверніть пристрій вертикально або збільште висоту вікна. '
-              'У короткому альбомному кадрі клітинки стають нечитабельними.',
+              s.rotateBody,
               textAlign: TextAlign.center,
               style: GoogleFonts.rajdhani(
                 color: CyberColors.textMuted,

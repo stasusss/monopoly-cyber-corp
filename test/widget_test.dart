@@ -15,18 +15,20 @@ void main() {
     final cell = BoardData.createBoard().first;
 
     await tester.pumpWidget(
-      MaterialApp(
-        theme: CyberTheme.dark,
-        home: Scaffold(
-          body: Column(
-            children: [
-              Text(CyberLore.appTitle),
-              SizedBox(
-                width: 72,
-                height: 96,
-                child: BoardCellWidget(cell: cell, ownerColor: null),
-              ),
-            ],
+      ProviderScope(
+        child: MaterialApp(
+          theme: CyberTheme.dark,
+          home: Scaffold(
+            body: Column(
+              children: [
+                Text(CyberLore.appTitle),
+                SizedBox(
+                  width: 72,
+                  height: 96,
+                  child: BoardCellWidget(cell: cell, ownerColor: null),
+                ),
+              ],
+            ),
           ),
         ),
       ),

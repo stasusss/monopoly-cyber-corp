@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/l10n/app_lang.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
 import '../../logic/network/online_session.dart';
@@ -45,14 +47,12 @@ class _SignalLostBannerState extends ConsumerState<SignalLostBanner> {
     final state = ref.watch(gameControllerProvider);
     if (!state.isWaitingForReconnection) return const SizedBox.shrink();
 
-    final name = (state.disconnectedPlayerName ?? 'OPERATIVE').toUpperCase();
+    final s = AppStrings(ref.watch(appLangProvider));
+    final name = (state.disconnectedPlayerName ?? s.pick('OPERATIVE', 'ГРАВЕЦЬ'))
+        .toUpperCase();
     final secs = _secondsLeft(state.reconnectDeadlineMs);
 
-    return Positioned(
-      left: 12,
-      right: 12,
-      top: 12,
-      child: IgnorePointer(
+    return IgnorePointer(
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: CyberColors.voidBlack.withValues(alpha: 0.92),
@@ -67,7 +67,7 @@ class _SignalLostBannerState extends ConsumerState<SignalLostBanner> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Text(
-              '[SIGNAL LOST: RECONNECTING $name... ($secs сек)]',
+              s.signalLost(name, secs),
               textAlign: TextAlign.center,
               style: GoogleFonts.shareTechMono(
                 color: CyberColors.neonMagenta,
@@ -79,7 +79,6 @@ class _SignalLostBannerState extends ConsumerState<SignalLostBanner> {
             ),
           ),
         ),
-      ),
     );
   }
 }

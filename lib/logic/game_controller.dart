@@ -7,6 +7,8 @@ import '../core/audio/sound_service.dart';
 import '../core/constants/game_factory.dart';
 import '../core/constants/game_rules.dart';
 import '../core/constants/street_colors.dart';
+import '../core/l10n/app_lang.dart';
+import '../core/l10n/app_strings.dart';
 import '../core/storage/game_storage.dart';
 import '../models/cell.dart';
 import '../models/dice.dart';
@@ -29,7 +31,9 @@ import 'trade/trade_manager.dart';
 
 final gameControllerProvider =
     StateNotifierProvider<GameController, GameState>((ref) {
-  return GameController();
+  return GameController(
+    strings: () => AppStrings(ref.read(appLangProvider)),
+  );
 });
 
 /// Turn state machine + board mutations for Pass & Play / heuristic AI /
@@ -41,16 +45,32 @@ class GameController extends StateNotifier<GameState>
     GameState? initial,
     DeckManager? decks,
     GameStorage? storage,
+    AppStrings Function()? strings,
     this.enableAi = true,
     this.autosave = true,
   })  : _random = random ?? Random(),
         _decks = decks ?? DeckManager.shuffled(random ?? Random()),
         _storage = storage ?? GameStorage(),
+        _strings = strings ?? _englishStrings,
         super(initial ?? GameFactory.newGame(roster: GameFactory.defaultRoster)) {
     _ai = AiService(this, random: _random);
+    if (initial == null) _localizeBootLog();
     if (enableAi) {
       Future.microtask(_ai.scheduleIfNeeded);
     }
+  }
+
+  final AppStrings Function() _strings;
+
+  AppStrings get t => _strings();
+
+  static AppStrings _englishStrings() => const AppStrings(AppLang.en);
+
+  void _localizeBootLog() {
+    final names = state.players.map((p) => p.name).join(', ');
+    state = state.copyWith(
+      log: [t.sessionBoot(names, GameRules.credits(GameRules.startingMoney))],
+    );
   }
 
   final Random _random;
@@ -191,7 +211,7 @@ class GameController extends StateNotifier<GameState>
     final doubles = roll.isDoubles ? state.consecutiveDoubles + 1 : 0;
     if (doubles >= GameRules.doublesForJail) {
       _sendToJail(
-        reason: '${_active.name} викинув три дублі поспіль — у тюрму!',
+        reason: t.tripleDoubles(_active.name),
         resetDoubles: true,
       );
       _pokeAi();
@@ -225,7 +245,7 @@ class GameController extends StateNotifier<GameState>
       moveStepsLeft: stepsLeft,
       log: passedGo
           ? _append(
-              '${player.name} проходить Старт і отримує ${GameRules.credits(GameRules.goSalary)}.',
+              t.passedGo(player.name, GameRules.credits(GameRules.goSalary)),
             )
           : state.log,
     );
@@ -277,7 +297,7 @@ class GameController extends StateNotifier<GameState>
     );
     state = state.copyWith(
       log: _append(
-        '${_active.name} declines «${pending.propertyName}» → AUCTION.',
+        t.declinesToAuction(_active.name, pending.propertyName),
       ),
     );
     soundService.play(Sfx.auction);
@@ -295,7 +315,7 @@ class GameController extends StateNotifier<GameState>
     if (!RulesEngine.canAfford(bidder, amount)) return;
     if (!AuctionManager.placeBid(auction, bidderId, amount)) return;
     state = state.copyWith(
-      log: _append('${bidder.name} bids ${GameRules.credits(amount)}.'),
+      log: _append(t.bids(bidder.name, GameRules.credits(amount))),
     );
     _afterAuctionAction();
     _hostSync();
@@ -309,7 +329,7 @@ class GameController extends StateNotifier<GameState>
     final bidderId = auction.currentBidderId;
     final bidder = state.players.firstWhere((p) => p.id == bidderId);
     AuctionManager.pass(auction, bidderId);
-    state = state.copyWith(log: _append('${bidder.name} passes auction.'));
+    state = state.copyWith(log: _append(t.passesAuction(bidder.name)));
     _afterAuctionAction();
     _hostSync();
   }
@@ -327,7 +347,7 @@ class GameController extends StateNotifier<GameState>
         requestProperties: offer.requestProperties,
       ),
       phase: TurnPhase.cellAction,
-      log: _append('Trade proposed.'),
+      log: _append(t.pick('Trade proposed.', 'Обмін запропоновано.')),
     );
     _pokeAi();
     _hostSync();
@@ -349,7 +369,7 @@ class GameController extends StateNotifier<GameState>
     state = TradeManager.apply(state, offer).copyWith(
       pendingAction: const PendingAction.none(),
       phase: TurnPhase.canEndTurn,
-      log: _append('Trade executed.'),
+      log: _append(t.pick('Trade executed.', 'Обмін виконано.')),
     );
     _pokeAi();
     _hostSync();
@@ -362,7 +382,7 @@ class GameController extends StateNotifier<GameState>
     state = state.copyWith(
       pendingAction: const PendingAction.none(),
       phase: TurnPhase.canEndTurn,
-      log: _append('Trade declined.'),
+      log: _append(t.pick('Trade declined.', 'Обмін відхилено.')),
     );
     _pokeAi();
     _hostSync();
@@ -415,7 +435,7 @@ class GameController extends StateNotifier<GameState>
       if (!RulesEngine.canAfford(_active, GameRules.jailFine)) {
         state = state.copyWith(
           log: _append(
-            '${_active.name} не може сплатити штраф \$${GameRules.jailFine}.',
+            t.cannotPayFine(_active.name, GameRules.credits(GameRules.jailFine)),
           ),
         );
         return;
@@ -429,7 +449,7 @@ class GameController extends StateNotifier<GameState>
     state = state.copyWith(
       players: _replacePlayer(freed),
       log: _append(
-        '${freed.name} сплачує \$${GameRules.jailFine} і виходить з тюрми.',
+        t.paidFine(freed.name, GameRules.credits(GameRules.jailFine)),
       ),
     );
     _pokeAi();
@@ -450,7 +470,7 @@ class GameController extends StateNotifier<GameState>
     if (extraTurn) {
       state = state.copyWith(
         phase: TurnPhase.waitingForRoll,
-        log: _append('${_active.name} ходить ще раз (дубль).'),
+        log: _append(t.extraTurn(_active.name)),
       );
       _pokeAi();
       _hostSync();
@@ -468,32 +488,14 @@ class GameController extends StateNotifier<GameState>
     }
     if (!_canManageEmpire()) return false;
     final cell = state.cellAt(cellIndex);
-    if (cell is! PropertyCell || cell.ownerId != _active.id) return false;
-    if (cell.isMortgaged || cell.houses >= 5) return false;
-    if (!RulesEngine.ownsFullColorGroup(
-      board: state.board,
-      ownerId: _active.id,
-      group: cell.colorGroup,
-    )) {
+    if (cell is! PropertyCell) return false;
+    if (Nightfall.rackBuildBlock(state: state, cell: cell, player: _active) !=
+        null) {
       return false;
     }
-
-    final group = state.board
-        .whereType<PropertyCell>()
-        .where((c) => c.colorGroup == cell.colorGroup && c.ownerId == _active.id);
-    final minHouses =
-        group.map((c) => c.houses).reduce((a, b) => a < b ? a : b);
-    if (cell.houses > minHouses) return false;
 
     final buildingHotel = cell.houses >= 4;
-    if (buildingHotel) {
-      if (state.hotelsInBank <= 0) return false;
-    } else if (state.housesInBank <= 0) {
-      return false;
-    }
-
     final cost = Nightfall.nodeCost(cell.colorGroup, cell.houses);
-    if (!RulesEngine.canAfford(_active, cost)) return false;
 
     final board = [...state.board];
     board[cellIndex] = cell.copyWith(houses: cell.houses + 1);
@@ -507,8 +509,12 @@ class GameController extends StateNotifier<GameState>
       hotelsInBank:
           buildingHotel ? state.hotelsInBank - 1 : state.hotelsInBank,
       log: _append(
-        '${buyer.name} builds on «${cell.name}» '
-        '(${cell.houses + 1}/5) for ${GameRules.credits(cost)}.',
+        t.built(
+          buyer.name,
+          cell.name,
+          cell.houses + 1,
+          GameRules.credits(cost),
+        ),
       ),
     );
     _hostSync();
@@ -557,7 +563,7 @@ class GameController extends StateNotifier<GameState>
         player.copyWith(balance: player.balance + mortgage),
       ),
       log: _append(
-        '${player.name} закладає «${cell.name}» (+$mortgage\$).',
+        t.mortgaged(player.name, cell.name, GameRules.credits(mortgage)),
       ),
     );
     return mortgage;
@@ -599,8 +605,7 @@ class GameController extends StateNotifier<GameState>
       board: board,
       players: _replacePlayer(player),
       log: _append(
-        '${player.name} lifts ICE on «${cell.name}» '
-        '(−${GameRules.credits(cost)}).',
+        t.lifted(player.name, cell.name, GameRules.credits(cost)),
       ),
     );
     _hostSync();
@@ -629,7 +634,7 @@ class GameController extends StateNotifier<GameState>
     );
     state = state.copyWith(
       players: _replacePlayer(freed),
-      log: _append('${freed.name} burns an ICE nullifier and walks.'),
+      log: _append(t.burnedNullifier(freed.name)),
     );
     _pokeAi();
     _hostSync();
@@ -652,9 +657,11 @@ class GameController extends StateNotifier<GameState>
     state = state.copyWith(
       players: _replacePlayer(debtor),
       log: _append(
-        '${debtor.name} draws a syndicate overdraft of '
-        '${GameRules.credits(principal)} '
-        '(repay ${GameRules.credits(total)} over two resets).',
+        t.overdraft(
+          debtor.name,
+          GameRules.credits(principal),
+          GameRules.credits(total),
+        ),
       ),
     );
     _hostSync();
@@ -704,7 +711,7 @@ class GameController extends StateNotifier<GameState>
     state = state.copyWith(
       pendingAction: const PendingAction.none(),
       phase: TurnPhase.canEndTurn,
-      log: _append('${_active.name} declines the district claim.'),
+      log: _append(t.declinedClaim(_active.name)),
     );
     _pokeAi();
     _hostSync();
@@ -738,8 +745,7 @@ class GameController extends StateNotifier<GameState>
         cell.colorGroup.name,
       ],
       log: _append(
-        '${hacker.name} blacks out «${cell.name}» '
-        'until their next turn (−${GameRules.credits(cost)}).',
+        t.blackedOut(hacker.name, cell.name, GameRules.credits(cost)),
       ),
     );
     _hostSync();
@@ -751,18 +757,14 @@ class GameController extends StateNotifier<GameState>
     if (cell is! PropertyCell || cell.houses <= 0 || cell.ownerId == null) {
       return 0;
     }
-
-    final group = state.board
-        .whereType<PropertyCell>()
-        .where((c) => c.colorGroup == cell.colorGroup && c.ownerId == cell.ownerId);
-    final maxHouses =
-        group.map((c) => c.houses).reduce((a, b) => a > b ? a : b);
-    if (cell.houses < maxHouses) return 0; // even sell-down
+    final player = state.players.firstWhere((p) => p.id == cell.ownerId);
+    if (Nightfall.rackSellBlock(state: state, cell: cell, player: player) !=
+        null) {
+      return 0;
+    }
 
     final refund = Nightfall.nodeRefund(cell.colorGroup, cell.houses);
     final sellingHotel = cell.houses >= 5;
-    if (sellingHotel && state.housesInBank < 4) return 0;
-    final player = state.players.firstWhere((p) => p.id == cell.ownerId);
     final board = [...state.board];
     board[cellIndex] = cell.copyWith(houses: cell.houses - 1);
 
@@ -778,8 +780,7 @@ class GameController extends StateNotifier<GameState>
           ? (state.hotelsInBank + 1).clamp(0, GameRules.hotelsInSupply)
           : state.hotelsInBank,
       log: _append(
-        '${player.name} sells a node on «${cell.name}» '
-        '(+${GameRules.credits(refund)}).',
+        t.soldNode(player.name, cell.name, GameRules.credits(refund)),
       ),
     );
     return refund;
@@ -816,6 +817,7 @@ class GameController extends StateNotifier<GameState>
     if (isOnline && !isHost) return;
     _ai.cancel();
     state = GameFactory.newGame(roster: roster ?? GameFactory.defaultRoster);
+    _localizeBootLog();
     _pokeAi();
     _hostSync();
   }
@@ -860,6 +862,7 @@ class GameController extends StateNotifier<GameState>
     _auction = null;
     _decks = DeckManager.shuffled(_random);
     state = GameFactory.fromPlayers(players);
+    _localizeBootLog();
     _hostSync();
     _pokeAi();
   }
@@ -974,7 +977,7 @@ class GameController extends StateNotifier<GameState>
     final doubles = roll.isDoubles ? state.consecutiveDoubles + 1 : 0;
     if (doubles >= GameRules.doublesForJail) {
       _sendToJail(
-        reason: '${_active.name} викинув три дублі поспіль — у тюрму!',
+        reason: t.tripleDoubles(_active.name),
         resetDoubles: true,
       );
       return;
@@ -1281,7 +1284,13 @@ class GameController extends StateNotifier<GameState>
         prevHostId != newHostId) {
       state = state.copyWith(
         log: _append(
-          'HOST MIGRATION → ${state.players.where((p) => p.id == localPlayerId).firstOrNull?.name ?? 'HOST'} assumes authority.',
+          t.hostMigration(
+            state.players
+                    .where((p) => p.id == localPlayerId)
+                    .firstOrNull
+                    ?.name ??
+                'HOST',
+          ),
         ),
       );
       unawaited(_broadcastSync());
@@ -1310,7 +1319,7 @@ class GameController extends StateNotifier<GameState>
       disconnectedPlayerName: player.name,
       reconnectDeadlineMs: deadline,
       log: _append(
-        '${player.name} SIGNAL LOST — reconnect window ${disconnectAiGrace.inSeconds}s.',
+        t.signalLostLog(player.name, disconnectAiGrace.inSeconds),
       ),
     );
     unawaited(_broadcastSync());
@@ -1348,7 +1357,7 @@ class GameController extends StateNotifier<GameState>
           clearingWait ? null : state.disconnectedPlayerName,
       reconnectDeadlineMs:
           clearingWait ? null : state.reconnectDeadlineMs,
-      log: _append('${player.name} SIGNAL RESTORED — control reclaimed.'),
+      log: _append(t.signalRestored(player.name)),
     );
     unawaited(_broadcastSync());
   }
@@ -1375,7 +1384,11 @@ class GameController extends StateNotifier<GameState>
           clearBanner ? null : state.disconnectedPlayerName,
       reconnectDeadlineMs: clearBanner ? null : state.reconnectDeadlineMs,
       log: _append(
-        '${player.name} SIGNAL LOST >${disconnectAiGrace.inSeconds}s → AI TAKEOVER (${bot.aiProfile?.name ?? 'bot'}).',
+        t.aiTakeover(
+          player.name,
+          disconnectAiGrace.inSeconds,
+          bot.aiProfile?.name ?? 'bot',
+        ),
       ),
     );
     unawaited(_broadcastSync());
@@ -1390,9 +1403,13 @@ class GameController extends StateNotifier<GameState>
       moveFromIndex: _active.position,
       moveStepsLeft: steps,
       log: _append(
-        '${_active.name} кидає ${state.lastRoll!.die1}+${state.lastRoll!.die2}'
-        ' (=${state.lastRoll!.total}'
-        '${state.lastRoll!.isDoubles ? ', дубль' : ''}).',
+        t.rolled(
+          _active.name,
+          state.lastRoll!.die1,
+          state.lastRoll!.die2,
+          state.lastRoll!.total,
+          state.lastRoll!.isDoubles,
+        ),
       ),
     );
   }
@@ -1403,7 +1420,7 @@ class GameController extends StateNotifier<GameState>
       state = state.copyWith(
         players: _replacePlayer(freed),
         consecutiveDoubles: 0,
-        log: _append('${freed.name} викидає дубль і виходить з тюрми!'),
+        log: _append(t.jailDoubles(freed.name)),
       );
       _beginMove(steps: roll.total);
       return;
@@ -1427,8 +1444,11 @@ class GameController extends StateNotifier<GameState>
         players: _replacePlayer(freed),
         consecutiveDoubles: 0,
         log: _append(
-          '${freed.name} сплачує \$${GameRules.jailFine} після '
-          '${GameRules.maxJailTurns}-го ходу в тюрмі.',
+          t.jailFineForced(
+            freed.name,
+            GameRules.credits(GameRules.jailFine),
+            GameRules.maxJailTurns,
+          ),
         ),
       );
       _beginMove(steps: roll.total);
@@ -1440,8 +1460,7 @@ class GameController extends StateNotifier<GameState>
       consecutiveDoubles: 0,
       phase: TurnPhase.canEndTurn,
       log: _append(
-        '${_active.name} лишається в тюрмі '
-        '(хід $turns/${GameRules.maxJailTurns}).',
+        t.staysJailed(_active.name, turns, GameRules.maxJailTurns),
       ),
     );
   }
@@ -1473,13 +1492,13 @@ class GameController extends StateNotifier<GameState>
       case SpecialKind.jail:
       case SpecialKind.freeParking:
         state = state.copyWith(
-          log: _append('${_active.name} на клітинці «$name».'),
+          log: _append(t.onCell(_active.name, name)),
         );
         _finishCellAction(autoPass: true);
       case SpecialKind.goToJail:
         _speak(_active, AiDialogueEvent.goToJail);
         _sendToJail(
-          reason: '${_active.name} hit CYBERPSYCHO DETENTION!',
+          reason: t.hitDetention(_active.name),
           resetDoubles: true,
         );
       case SpecialKind.chance:
@@ -1534,7 +1553,7 @@ class GameController extends StateNotifier<GameState>
           price: price,
         ),
         log: _append(
-          '${_active.name} може купити «${cell.name}» за \$$price.',
+          t.mayBuy(_active.name, cell.name, GameRules.credits(price)),
         ),
       );
       // AI buy decision is handled by AiService (with thinking delay).
@@ -1596,8 +1615,12 @@ class GameController extends StateNotifier<GameState>
         amount: rent,
       ),
       log: _append(
-        '${payer.name} paid ${GameRules.credits(rent)} to ${paidOwner.name} '
-        '(«${cell.name}»).',
+        t.paidRent(
+          payer.name,
+          GameRules.credits(rent),
+          paidOwner.name,
+          cell.name,
+        ),
       ),
     );
   }
@@ -1626,7 +1649,7 @@ class GameController extends StateNotifier<GameState>
         taxName: name,
         amount: amount,
       ),
-      log: _append('${p.name} сплачує $name: \$$amount.'),
+      log: _append(t.paidTax(p.name, name, GameRules.credits(amount))),
     );
   }
 
@@ -1635,7 +1658,7 @@ class GameController extends StateNotifier<GameState>
     final price = cell.priceOrNull!;
     if (!RulesEngine.canAfford(_active, price)) {
       state = state.copyWith(
-        log: _append('${_active.name} не вистачає грошей на «${cell.name}».'),
+        log: _append(t.cannotAfford(_active.name, cell.name)),
       );
       return;
     }
@@ -1660,7 +1683,7 @@ class GameController extends StateNotifier<GameState>
       board: board,
       players: _replacePlayer(buyer),
       log: _append(
-        '${buyer.name} acquires «${cell.name}» for ${GameRules.credits(price)}.',
+        t.acquired(buyer.name, cell.name, GameRules.credits(price)),
       ),
     );
     if (cell is PropertyCell &&
@@ -1767,7 +1790,10 @@ class GameController extends StateNotifier<GameState>
       state = state.copyWith(
         pendingAction: const PendingAction.none(),
         phase: TurnPhase.canEndTurn,
-        log: _append('Auction closed — no bids. Asset remains unclaimed.'),
+        log: _append(t.pick(
+          'Auction closed — no bids. Asset remains unclaimed.',
+          'Аукціон закрито — ставок немає. Актив лишається вільним.',
+        )),
       );
       _pokeAi();
       return;
@@ -1778,7 +1804,10 @@ class GameController extends StateNotifier<GameState>
       state = state.copyWith(
         pendingAction: const PendingAction.none(),
         phase: TurnPhase.canEndTurn,
-        log: _append('Auction winner insolvent — voided.'),
+        log: _append(t.pick(
+          'Auction winner insolvent — voided.',
+          'Переможець аукціону неплатоспроможний — угоду скасовано.',
+        )),
       );
       _pokeAi();
       return;
@@ -1810,8 +1839,11 @@ class GameController extends StateNotifier<GameState>
       pendingAction: const PendingAction.none(),
       phase: TurnPhase.canEndTurn,
       log: _append(
-        '${paid.name} wins auction for «${a.propertyName}» '
-        'at ${GameRules.credits(a.highestBid)}.',
+        t.winsAuction(
+          paid.name,
+          a.propertyName,
+          GameRules.credits(a.highestBid),
+        ),
       ),
     );
     _pokeAi();
@@ -1830,6 +1862,7 @@ class GameController extends StateNotifier<GameState>
       otherName: otherName,
       amount: amount,
       propertyName: propertyName,
+      strings: t,
     );
     if (line == null) return;
     state = state.copyWith(
@@ -1850,7 +1883,7 @@ class GameController extends StateNotifier<GameState>
     state = state.copyWith(
       players: _replacePlayer(paid),
       log: _append(
-        '${paid.name} collects ${GameRules.credits(amount)} at Cycle Reset.',
+        t.collectsReset(paid.name, GameRules.credits(amount)),
       ),
     );
     _skimOverdraftOnActive();
@@ -1872,7 +1905,7 @@ class GameController extends StateNotifier<GameState>
       state = state.copyWith(
         players: _replacePlayer(player),
         log: _append(
-          '${player.name} pays the syndicate ${GameRules.credits(due)}.',
+          t.paysSyndicate(player.name, GameRules.credits(due)),
         ),
       );
       return;
@@ -1887,8 +1920,12 @@ class GameController extends StateNotifier<GameState>
       state = state.copyWith(
         players: _replacePlayer(player),
         log: _append(
-          '${player.name} puts ${GameRules.credits(paid)} toward the syndicate. '
-          'The balance rolls to the next reset.',
+          t.pick(
+            '${player.name} puts ${GameRules.credits(paid)} toward the syndicate. '
+            'The balance rolls to the next reset.',
+            '${player.name} віддає ${GameRules.credits(paid)} синдикату. '
+            'Решта переноситься на наступне коло.',
+          ),
         ),
       );
       return;
@@ -1908,7 +1945,7 @@ class GameController extends StateNotifier<GameState>
       state = state.copyWith(
         players: _replacePlayer(cleared),
         log: _append(
-          'Syndicate seizes «$seized» and clears ${player.name}\'s debt.',
+          t.seizedDebt(seized, player.name),
         ),
       );
       return;
@@ -1960,7 +1997,7 @@ class GameController extends StateNotifier<GameState>
   void _beginClaim({required bool consumesBuyout}) {
     if (consumesBuyout && _active.buyoutUsed) {
       state = state.copyWith(
-        log: _append('${_active.name} has already used eminent domain.'),
+        log: _append(t.alreadyClaimed(_active.name)),
       );
       return;
     }
@@ -1968,7 +2005,7 @@ class GameController extends StateNotifier<GameState>
     if (targets.isEmpty) {
       if (state.pendingAction is PendingCardNotice) return;
       state = state.copyWith(
-        log: _append('${_active.name} has no exposed third street to claim.'),
+        log: _append(t.noClaimTarget(_active.name)),
       );
       return;
     }
@@ -1978,7 +2015,7 @@ class GameController extends StateNotifier<GameState>
         cellIndexes: targets,
         consumesBuyout: consumesBuyout,
       ),
-      log: _append('${_active.name} opens a district claim.'),
+      log: _append(t.opensClaim(_active.name)),
     );
   }
 
@@ -2008,8 +2045,12 @@ class GameController extends StateNotifier<GameState>
       board: board,
       players: _replacePlayers([paidBuyer, paidOwner]),
       log: _append(
-        '${buyer.name} claims «${cell.name}» from ${owner.name} '
-        'for ${GameRules.credits(price)}.',
+        t.claimed(
+          buyer.name,
+          cell.name,
+          owner.name,
+          GameRules.credits(price),
+        ),
       ),
     );
     _hostSync();
@@ -2088,8 +2129,7 @@ class GameController extends StateNotifier<GameState>
       bankruptcyCount: count,
       moveStepsLeft: 0,
       log: _append(
-        '${loser.name} liquidated — BANKRUPT '
-        '($count/${GameRules.bankruptciesToEnd}).',
+        t.liquidated(loser.name, count, GameRules.bankruptciesToEnd),
       ),
     );
 
@@ -2099,7 +2139,10 @@ class GameController extends StateNotifier<GameState>
     }
 
     if (count >= GameRules.bankruptciesToEnd) {
-      _finishByNetWorth('Second bankruptcy. Net worth closes the session.');
+      _finishByNetWorth(t.pick(
+        'Second bankruptcy. Net worth closes the session.',
+        'Друге банкрутство. Сесію закриває вартість.',
+      ));
       return;
     }
 
@@ -2127,7 +2170,7 @@ class GameController extends StateNotifier<GameState>
       log: winner == null
           ? state.log
           : _append(
-              'Переможець: ${winner.name} · NET ${GameRules.credits(worth)}.',
+              t.winnerLog(winner.name, GameRules.credits(worth)),
             ),
     );
   }
@@ -2153,7 +2196,10 @@ class GameController extends StateNotifier<GameState>
     for (final p in ranked) {
       log = [
         ...log,
-        '${p.name} NET ${GameRules.credits(Nightfall.netWorth(state, p))}.',
+        t.netLine(
+          p.name,
+          GameRules.credits(Nightfall.netWorth(state, p)),
+        ),
       ];
     }
     state = state.copyWith(
@@ -2166,7 +2212,7 @@ class GameController extends StateNotifier<GameState>
       ),
       log: [
         ...log,
-        'Переможець: ${winner.name} · NET ${GameRules.credits(worth)}.',
+        t.winnerLog(winner.name, GameRules.credits(worth)),
       ],
     );
   }
@@ -2190,7 +2236,7 @@ class GameController extends StateNotifier<GameState>
     }
     if (round > GameRules.blitzRoundLimit) {
       _finishByNetWorth(
-        'Round ${GameRules.blitzRoundLimit} closed. Net worth decides.',
+        t.blitzClosed(),
       );
       return;
     }
@@ -2222,7 +2268,7 @@ class GameController extends StateNotifier<GameState>
       moveStepsLeft: 0,
       pendingAction: const PendingAction.none(),
       log: _append(
-        'ROUND $round/${GameRules.blitzRoundLimit} · ${players[idx].name}.',
+        t.roundBanner(round, GameRules.blitzRoundLimit, players[idx].name),
       ),
     );
     unawaited(_autosaveIfNeeded());

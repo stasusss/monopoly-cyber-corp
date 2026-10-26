@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/game_rules.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
 import '../../logic/nightfall.dart';
@@ -123,11 +124,14 @@ class _AuctionBodyState extends State<_AuctionBody> {
 
   @override
   Widget build(BuildContext context) {
+    final s = stringsOf(context);
     final auction = widget.auction;
     final high = auction.highestBid <= 0
-        ? 'No bids yet'
-        : 'High: ${GameRules.credits(auction.highestBid)}'
-            '${widget.leaderName == null ? '' : ' · ${widget.leaderName}'}';
+        ? s.noBidsYet
+        : s.auctionHigh(
+            GameRules.credits(auction.highestBid),
+            widget.leaderName,
+          );
     return CyberDialogFrame(
       glowColor: CyberColors.neonMagenta,
       maxWidth: 380,
@@ -135,7 +139,7 @@ class _AuctionBodyState extends State<_AuctionBody> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'LIVE AUCTION',
+            s.liveAuction,
             style: GoogleFonts.orbitron(
               color: CyberColors.neonMagenta,
               fontWeight: FontWeight.w800,
@@ -161,12 +165,12 @@ class _AuctionBodyState extends State<_AuctionBody> {
           ),
           Text(
             widget.canAct
-                ? 'Your bid, ${widget.actorName}'
-                : 'Waiting on ${widget.actorName}',
+                ? s.yourBid(widget.actorName)
+                : s.waitingOn(widget.actorName),
             style: GoogleFonts.shareTechMono(color: CyberColors.textMuted),
           ),
           Text(
-            'Minimum ${GameRules.credits(widget.floor)} · pass sticks',
+            s.minimumBid(GameRules.credits(widget.floor)),
             style: GoogleFonts.shareTechMono(
               color: CyberColors.textMuted,
               fontSize: 12,
@@ -175,7 +179,7 @@ class _AuctionBodyState extends State<_AuctionBody> {
           if (widget.yourBalance != null && widget.canAct) ...[
             const SizedBox(height: 6),
             Text(
-              'YOUR STACK ${GameRules.credits(widget.yourBalance!)}',
+              s.yourStack(GameRules.credits(widget.yourBalance!)),
               style: GoogleFonts.shareTechMono(
                 color: CyberColors.terminalGreen,
                 fontFeatures: const [FontFeature.tabularFigures()],
@@ -189,8 +193,8 @@ class _AuctionBodyState extends State<_AuctionBody> {
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               style: GoogleFonts.shareTechMono(color: CyberColors.textPrimary),
-              decoration: const InputDecoration(
-                labelText: 'YOUR BID',
+              decoration: InputDecoration(
+                labelText: s.yourBidField,
                 isDense: true,
               ),
               onSubmitted: (_) => _submit(),
@@ -204,20 +208,20 @@ class _AuctionBodyState extends State<_AuctionBody> {
                 Expanded(
                   child: FilledButton(
                     onPressed: _submit,
-                    child: const Text('BID'),
+                    child: Text(s.bid),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: OutlinedButton(
                     onPressed: widget.onPass,
-                    child: const Text('PASS'),
+                    child: Text(s.pass),
                   ),
                 ),
               ],
             )
           : Text(
-              'Waiting for bidder…',
+              s.waitingForBidder,
               style: GoogleFonts.shareTechMono(color: CyberColors.textMuted),
             ),
     );

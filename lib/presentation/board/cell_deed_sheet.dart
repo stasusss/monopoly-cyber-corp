@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/game_rules.dart';
-import '../../core/constants/street_colors.dart';
+import '../../core/l10n/app_lang.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
 import '../../logic/nightfall.dart';
@@ -51,7 +52,9 @@ class _DeedSheetState extends ConsumerState<_DeedSheet> {
   Widget build(BuildContext context) {
     final height = MediaQuery.sizeOf(context).height;
     final sheetH = math.min(480.0, math.max(300.0, height * 0.52));
+    ref.watch(appLangProvider);
     final state = ref.watch(gameControllerProvider);
+    final s = stringsOf(context);
 
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
@@ -84,7 +87,7 @@ class _DeedSheetState extends ConsumerState<_DeedSheet> {
                     children: [
                       Expanded(
                         child: Text(
-                          'SWIPE · NEIGHBOR NODES',
+                          s.swipeNodes,
                           style: GoogleFonts.shareTechMono(
                             color: CyberColors.textMuted,
                             fontSize: 11,
@@ -93,7 +96,7 @@ class _DeedSheetState extends ConsumerState<_DeedSheet> {
                         ),
                       ),
                       IconButton(
-                        tooltip: 'CLOSE',
+                        tooltip: s.close,
                         onPressed: () => Navigator.pop(context),
                         icon: const Icon(Icons.close, color: CyberColors.neonCyan),
                       ),
@@ -135,6 +138,7 @@ class _DeedPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final s = stringsOf(context);
     final accent = BoardCellWidget.accentOf(cell);
     final owner = _owner(cell, players);
 
@@ -155,12 +159,18 @@ class _DeedPage extends StatelessWidget {
         if (cell is PropertyCell) ...[
           const SizedBox(height: 4),
           Text(
-            (cell as PropertyCell).colorGroup.districtName,
+            s.districtName((cell as PropertyCell).colorGroup),
             style: GoogleFonts.rajdhani(
               color: accent,
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
+          ),
+          const SizedBox(height: 8),
+          _DistrictRoster(
+            cell: cell as PropertyCell,
+            board: board,
+            players: players,
           ),
         ],
         if (cell.priceOrNull != null) ...[
@@ -177,7 +187,7 @@ class _DeedPage extends StatelessWidget {
         ],
         const SizedBox(height: 10),
         Text(
-          owner == null ? 'UNCLAIMED' : 'OWNER · ${owner.name}',
+          owner == null ? s.unclaimed : s.ownerLine(owner.name),
           style: GoogleFonts.shareTechMono(
             color: owner == null ? CyberColors.textMuted : owner.tokenColor.color,
             fontSize: 13,
@@ -187,7 +197,7 @@ class _DeedPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Text(
-              'MORTGAGED · ICE',
+              s.mortgagedIce,
               style: GoogleFonts.shareTechMono(
                 color: CyberColors.neonMagenta,
                 fontSize: 13,
@@ -198,7 +208,7 @@ class _DeedPage extends StatelessWidget {
         if (cell is PropertyCell) ...[
           const SizedBox(height: 6),
           Text(
-            CyberLore.buildingTier((cell as PropertyCell).houses),
+            s.buildingTier((cell as PropertyCell).houses),
             style: GoogleFonts.shareTechMono(
               color: CyberColors.terminalGreen,
               fontSize: 12,
@@ -208,7 +218,7 @@ class _DeedPage extends StatelessWidget {
         if (_mortgageOf(cell) != null) ...[
           const SizedBox(height: 4),
           Text(
-            'MORTGAGE VALUE ${GameRules.credits(_mortgageOf(cell)!)}',
+            s.mortgageValue(GameRules.credits(_mortgageOf(cell)!)),
             style: GoogleFonts.shareTechMono(
               color: CyberColors.textMuted,
               fontSize: 12,
@@ -216,12 +226,12 @@ class _DeedPage extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 14),
-        ..._rentRows(cell, board, owner),
+        ..._rentRows(cell, board, owner, s),
         const SizedBox(height: 8),
         _DeedActions(cell: cell),
         const SizedBox(height: 8),
         Text(
-          _blurb(cell),
+          _blurb(cell, s),
           style: GoogleFonts.rajdhani(
             color: CyberColors.textPrimary,
             fontSize: 16,
@@ -248,31 +258,35 @@ class _DeedPage extends StatelessWidget {
         _ => null,
       };
 
-  static String _blurb(BoardCell cell) => switch (cell) {
+  static String _blurb(BoardCell cell, AppStrings s) => switch (cell) {
         SpecialCell(:final kind) => switch (kind) {
-            SpecialKind.go => 'Pass this node to collect ₵200.',
-            SpecialKind.jail => 'Visiting, or locked in ICE until bail or doubles.',
-            SpecialKind.freeParking => 'Safe zone. The bank pays nothing here.',
-            SpecialKind.goToJail => 'Transit ends. Report to ICE Lock.',
-            SpecialKind.chance => 'Draw a Data Breach card.',
-            SpecialKind.communityChest => 'Draw a Corpo Bounty card.',
+            SpecialKind.go => s.blurbFor('go'),
+            SpecialKind.jail => s.blurbFor('jail'),
+            SpecialKind.freeParking => s.blurbFor('parking'),
+            SpecialKind.goToJail => s.blurbFor('goto'),
+            SpecialKind.chance => s.blurbFor('chance'),
+            SpecialKind.communityChest => s.blurbFor('chest'),
           },
-        TaxCell(:final amount) =>
-          'Flat transfer of ${GameRules.credits(amount)} to the bank.',
-        RailroadCell() => 'Fare scales with how many Maglev lines you hold.',
-        UtilityCell() => 'Bill is a multiplier on the dice that landed here.',
-        PropertyCell() => 'Rent climbs with Data Racks. A full district doubles the base.',
+        TaxCell(:final amount) => s.taxFlat(GameRules.credits(amount)),
+        RailroadCell() => s.blurbFor('rail'),
+        UtilityCell() => s.blurbFor('util'),
+        PropertyCell() => s.blurbFor('street'),
       };
 
-  List<Widget> _rentRows(BoardCell cell, List<BoardCell> board, Player? owner) {
+  List<Widget> _rentRows(
+    BoardCell cell,
+    List<BoardCell> board,
+    Player? owner,
+    AppStrings s,
+  ) {
     return switch (cell) {
       PropertyCell(:final rents, :final houses) => [
           for (var i = 0; i < rents.length; i++)
             _rentLine(
               switch (i) {
-                0 => 'BASE',
-                5 => 'HQ',
-                _ => 'RACK ×$i',
+                0 => s.base,
+                5 => s.hq,
+                _ => s.rackTimes(i),
               },
               GameRules.credits(rents[i]),
               active: !cell.isMortgaged && houses == i,
@@ -281,7 +295,7 @@ class _DeedPage extends StatelessWidget {
       RailroadCell() => [
           for (var i = 0; i < GameRules.railroadRents.length; i++)
             _rentLine(
-              '${i + 1} LINE${i == 0 ? '' : 'S'}',
+              s.lines(i + 1),
               GameRules.credits(GameRules.railroadRents[i]),
               active: owner != null &&
                   _ownedCount<RailroadCell>(board, owner.id) == i + 1,
@@ -289,14 +303,14 @@ class _DeedPage extends StatelessWidget {
         ],
       UtilityCell() => [
           _rentLine(
-            '1 GRID',
-            '×${GameRules.utilityMultiplierOne} DICE',
+            s.oneGrid,
+            s.diceTimes(GameRules.utilityMultiplierOne),
             active: owner != null &&
                 _ownedCount<UtilityCell>(board, owner.id) <= 1,
           ),
           _rentLine(
-            '2 GRIDS',
-            '×${GameRules.utilityMultiplierTwo} DICE',
+            s.twoGrids,
+            s.diceTimes(GameRules.utilityMultiplierTwo),
             active: owner != null &&
                 _ownedCount<UtilityCell>(board, owner.id) >= 2,
           ),
@@ -350,6 +364,7 @@ class _DeedActions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = AppStrings(ref.watch(appLangProvider));
     final state = ref.watch(gameControllerProvider);
     final controller = ref.read(gameControllerProvider.notifier);
     if (!controller.isLocalInputAllowed) return const SizedBox.shrink();
@@ -364,35 +379,55 @@ class _DeedActions extends ConsumerWidget {
     final node = cell;
 
     final buttons = <Widget>[];
+    final notes = <String>[];
 
     if (node is PropertyCell &&
         node.ownerId == me.id &&
         !node.isMortgaged &&
         node.houses < 5) {
+      final block = Nightfall.rackBuildBlock(
+        state: state,
+        cell: node,
+        player: me,
+        strings: s,
+      );
       final cost = Nightfall.nodeCost(node.colorGroup, node.houses);
       final hotel = node.houses >= 4;
-      final supplyOk = hotel ? state.hotelsInBank > 0 : state.housesInBank > 0;
-      buttons.add(
-        _act(
-          context,
-          supplyOk && me.balance >= cost
-              ? () => controller.buildHouse(node.index)
-              : null,
-          'BUILD ${GameRules.credits(cost)}'
-          '${hotel ? ' · HQ ${state.hotelsInBank}' : ' · RACK ${state.housesInBank}'}',
-        ),
-      );
+      if (block == null) {
+        buttons.add(
+          _act(
+            context,
+            () => controller.buildHouse(node.index),
+            s.buildLabel(
+              GameRules.credits(cost),
+              hotel,
+              hotel ? state.hotelsInBank : state.housesInBank,
+            ),
+          ),
+        );
+      } else {
+        notes.add(block);
+      }
     }
     if (node is PropertyCell && node.ownerId == me.id && node.houses > 0) {
-      final refund = Nightfall.nodeRefund(node.colorGroup, node.houses);
-      final blocked = node.houses >= 5 && state.housesInBank < 4;
-      buttons.add(
-        _act(
-          context,
-          blocked ? null : () => controller.sellNode(node.index),
-          'SELL NODE +${GameRules.credits(refund)}',
-        ),
+      final block = Nightfall.rackSellBlock(
+        state: state,
+        cell: node,
+        player: me,
+        strings: s,
       );
+      final refund = Nightfall.nodeRefund(node.colorGroup, node.houses);
+      if (block == null) {
+        buttons.add(
+          _act(
+            context,
+            () => controller.sellNode(node.index) > 0,
+            s.sellLabel(GameRules.credits(refund)),
+          ),
+        );
+      } else {
+        notes.add(block);
+      }
     }
     final bareOwnable = node.ownerIdOrNull == me.id &&
         !node.isMortgagedOrFalse &&
@@ -404,22 +439,29 @@ class _DeedActions extends ConsumerWidget {
           _act(
             context,
             () => controller.pledgeProperty(node.index),
-            'MORTGAGE +${GameRules.credits(value)}',
+            s.mortgageLabel(GameRules.credits(value)),
           ),
         );
       }
     }
     if (node.ownerIdOrNull == me.id && node.isMortgagedOrFalse) {
       final cost = Nightfall.unmortgageCost(Nightfall.mortgageValue(node));
-      buttons.add(
-        _act(
-          context,
-          me.balance >= cost
-              ? () => controller.unmortgageProperty(node.index)
-              : null,
-          'LIFT ICE −${GameRules.credits(cost)}',
-        ),
-      );
+      if (me.balance >= cost) {
+        buttons.add(
+          _act(
+            context,
+            () => controller.unmortgageProperty(node.index),
+            s.liftLabel(GameRules.credits(cost)),
+          ),
+        );
+      } else {
+        notes.add(
+          s.liftShort(
+            GameRules.credits(cost),
+            GameRules.credits(cost - me.balance),
+          ),
+        );
+      }
     }
     if (node is PropertyCell &&
         node.ownerId != null &&
@@ -430,30 +472,62 @@ class _DeedActions extends ConsumerWidget {
         !state.blackoutGroupsThisRound.contains(node.colorGroup.name) &&
         !Nightfall.cellSuppressed(state, node.index)) {
       final cost = Nightfall.blackoutCost(node.colorGroup);
-      buttons.add(
-        _act(
-          context,
-          me.balance >= cost ? () => controller.blackout(node.index) : null,
-          'BLACKOUT −${GameRules.credits(cost)}',
-        ),
-      );
+      if (me.balance >= cost) {
+        buttons.add(
+          _act(
+            context,
+            () {
+              controller.blackout(node.index);
+              return true;
+            },
+            s.blackoutLabel(GameRules.credits(cost)),
+          ),
+        );
+      } else {
+        notes.add(
+          s.blackoutShort(
+            GameRules.credits(cost),
+            GameRules.credits(cost - me.balance),
+          ),
+        );
+      }
     }
     if (!me.buyoutUsed &&
         Nightfall.claimTargets(state, me).contains(node.index)) {
       final price = Nightfall.buyoutPrice(node.priceOrNull ?? 0);
-      buttons.add(
-        _act(
-          context,
-          me.balance >= price ? () => controller.buyout(node.index) : null,
-          'CLAIM 120% · ${GameRules.credits(price)}',
-        ),
-      );
+      if (me.balance >= price) {
+        buttons.add(
+          _act(
+            context,
+            () => controller.buyout(node.index),
+            s.claimLabel(GameRules.credits(price)),
+          ),
+        );
+      } else {
+        notes.add(
+          s.claimShort(
+            GameRules.credits(price),
+            GameRules.credits(price - me.balance),
+          ),
+        );
+      }
     }
 
-    if (buttons.isEmpty) return const SizedBox.shrink();
+    if (buttons.isEmpty && notes.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        for (final note in notes) ...[
+          Text(
+            note,
+            style: GoogleFonts.shareTechMono(
+              color: CyberColors.cyberYellow,
+              fontSize: 12,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         for (final button in buttons) ...[
           button,
           const SizedBox(height: 6),
@@ -462,15 +536,81 @@ class _DeedActions extends ConsumerWidget {
     );
   }
 
-  Widget _act(BuildContext context, VoidCallback? onPressed, String label) {
+  Widget _act(BuildContext context, bool Function() onPressed, String label) {
     return FilledButton(
-      onPressed: onPressed == null
-          ? null
-          : () {
-              onPressed();
-              Navigator.pop(context);
-            },
+      onPressed: () {
+        if (onPressed() && context.mounted) Navigator.pop(context);
+      },
       child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
     );
+  }
+}
+
+class _DistrictRoster extends StatelessWidget {
+  const _DistrictRoster({
+    required this.cell,
+    required this.board,
+    required this.players,
+  });
+
+  final PropertyCell cell;
+  final List<BoardCell> board;
+  final List<Player> players;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = stringsOf(context);
+    final streets = board
+        .whereType<PropertyCell>()
+        .where((c) => c.colorGroup == cell.colorGroup)
+        .toList()
+      ..sort((a, b) => a.index.compareTo(b.index));
+    final owned = cell.ownerId == null
+        ? 0
+        : streets.where((c) => c.ownerId == cell.ownerId).length;
+    final sameOwner = cell.ownerId != null &&
+        streets.every((c) => c.ownerId == cell.ownerId && !c.isMortgaged);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          s.districtProgress(owned, streets.length, sameOwner),
+          style: GoogleFonts.shareTechMono(
+            color: sameOwner ? CyberColors.terminalGreen : CyberColors.cyberYellow,
+            fontSize: 11,
+            height: 1.3,
+          ),
+        ),
+        const SizedBox(height: 4),
+        for (final street in streets)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Text(
+              '${street.index == cell.index ? '>' : '-'} ${street.name} — ${_status(street, s)}',
+              style: GoogleFonts.shareTechMono(
+                color: street.index == cell.index
+                    ? CyberColors.neonCyan
+                    : CyberColors.textMuted,
+                fontSize: 11,
+                height: 1.3,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  String _status(PropertyCell street, AppStrings s) {
+    if (street.ownerId == null) return s.unclaimed;
+    final owner = players.where((p) => p.id == street.ownerId).firstOrNull;
+    final who = owner?.name ?? s.unknown;
+    final ice = street.isMortgaged ? ' · ${s.pick('ICE', 'ЗАСТАВА')}' : '';
+    final racks = switch (street.houses) {
+      0 => '',
+      >= 5 => ' · ${s.hq}',
+      _ => ' · ${s.rackTimes(street.houses)}',
+    };
+    return '$who$ice$racks';
   }
 }

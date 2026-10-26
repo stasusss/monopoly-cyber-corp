@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/game_rules.dart';
 import '../../core/constants/street_colors.dart';
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../models/cell.dart';
 
@@ -92,7 +93,7 @@ class BoardCellWidget extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            _shortLabel(cell),
+                            _shortLabel(cell, stringsOf(context)),
                             textAlign: TextAlign.center,
                             style: GoogleFonts.shareTechMono(
                               fontSize: labelSize,
@@ -155,23 +156,21 @@ class BoardCellWidget extends StatelessWidget {
   }
 
   /// Short code sized to a cell. The full street name lives on the deed sheet.
-  static String _shortLabel(BoardCell cell) {
+  static String _shortLabel(BoardCell cell, AppStrings s) {
     return switch (cell) {
       SpecialCell(:final kind) => switch (kind) {
-          SpecialKind.go => 'CYCLE\nRESET',
-          SpecialKind.jail => 'ICE\nLOCK',
-          SpecialKind.freeParking => 'SAFE\nZONE',
-          SpecialKind.goToJail => 'DETENTION',
-          SpecialKind.chance => 'DATA\nBREACH',
-          SpecialKind.communityChest => 'CORPO\nBOUNTY',
+          SpecialKind.go => s.pick('CYCLE\nRESET', 'СТАРТ'),
+          SpecialKind.jail => s.pick('ICE\nLOCK', 'ICE\nВ\'ЯЗН'),
+          SpecialKind.freeParking => s.pick('SAFE\nZONE', 'ТИХА\nЗОНА'),
+          SpecialKind.goToJail => s.pick('DETENTION', 'АРЕШТ'),
+          SpecialKind.chance => s.pick('DATA\nBREACH', 'ВИТІК\nДАНИХ'),
+          SpecialKind.communityChest => s.pick('CORPO\nBOUNTY', 'КОРПО\nПРИЗ'),
         },
-      TaxCell(:final name) => name
-          .replaceAll('NETWATCH ', '')
-          .replaceAll('LUXURY ', '')
-          .replaceAll(' TARIFF', '')
-          .replaceAll(' LEVY', ''),
+      TaxCell(:final name) => name.contains('LUXURY')
+          ? s.pick('LUXURY\nLEVY', 'ЛЮКС\nЗБІР')
+          : s.pick('NET\nTARIFF', 'ТАРИФ'),
       RailroadCell(:final name) => name
-          .replaceFirst('MAGLEV STATION ', 'MAGLEV\n'),
+          .replaceFirst('MAGLEV STATION ', s.pick('MAGLEV\n', 'МАГЛЕВ\n')),
       UtilityCell(:final name) => name.split(' ').take(2).join('\n'),
       PropertyCell(:final name) => _streetCode(name),
     };

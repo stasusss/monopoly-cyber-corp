@@ -313,4 +313,11 @@ abstract final class CyberCardCatalog {
           targetIndex: 0,
         ),
       ];
+
+  static GameCard? matchBody(String body) {
+    for (final card in [...dataBreachDeck(), ...corpoBountyDeck()]) {
+      if (card.description == body) return card;
+    }
+    return null;
+  }
 }
