@@ -41,6 +41,37 @@ mixin _$GameState {
   String? get aiDialogue => throw _privateConstructorUsedError;
   String? get aiDialogueSpeakerId => throw _privateConstructorUsedError;
 
+  /// Online: an operative left presence and grace timer is running.
+  bool get isWaitingForReconnection => throw _privateConstructorUsedError;
+  String? get disconnectedPlayerName => throw _privateConstructorUsedError;
+
+  /// Epoch ms when [disconnectAiGrace] expires (host-authored, synced).
+  int? get reconnectDeadlineMs => throw _privateConstructorUsedError;
+
+  /// Table round, 1-based. A round completes when the turn wraps to the
+  /// first seat. Blitz ends as round [GameRules.blitzRoundLimit] + 1 starts.
+  int get round => throw _privateConstructorUsedError;
+  int get bankruptcyCount => throw _privateConstructorUsedError;
+  int get housesInBank => throw _privateConstructorUsedError;
+  int get hotelsInBank => throw _privateConstructorUsedError;
+
+  /// Cell indexes whose rent is calculated one tier lower.
+  List<int> get suppressedCells => throw _privateConstructorUsedError;
+
+  /// Hacker id aligned with [suppressedCells]. Cleared when that operative's
+  /// next turn starts.
+  List<String> get suppressedBy => throw _privateConstructorUsedError;
+
+  /// [ColorGroup.name] values already blacked out this round.
+  List<String> get blackoutGroupsThisRound =>
+      throw _privateConstructorUsedError;
+
+  /// Next rent resolution is multiplied (Maglev breach = 2). Cleared after use.
+  int get nextRentMultiplier => throw _privateConstructorUsedError;
+
+  /// Next utility bill is 10× dice regardless of how many grids the owner holds.
+  bool get nextUtilityFlatTen => throw _privateConstructorUsedError;
+
   /// Serializes this GameState to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -70,6 +101,18 @@ abstract class $GameStateCopyWith<$Res> {
     PendingAction pendingAction,
     String? aiDialogue,
     String? aiDialogueSpeakerId,
+    bool isWaitingForReconnection,
+    String? disconnectedPlayerName,
+    int? reconnectDeadlineMs,
+    int round,
+    int bankruptcyCount,
+    int housesInBank,
+    int hotelsInBank,
+    List<int> suppressedCells,
+    List<String> suppressedBy,
+    List<String> blackoutGroupsThisRound,
+    int nextRentMultiplier,
+    bool nextUtilityFlatTen,
   });
 
   $DiceRollCopyWith<$Res>? get lastRoll;
@@ -104,6 +147,18 @@ class _$GameStateCopyWithImpl<$Res, $Val extends GameState>
     Object? pendingAction = null,
     Object? aiDialogue = freezed,
     Object? aiDialogueSpeakerId = freezed,
+    Object? isWaitingForReconnection = null,
+    Object? disconnectedPlayerName = freezed,
+    Object? reconnectDeadlineMs = freezed,
+    Object? round = null,
+    Object? bankruptcyCount = null,
+    Object? housesInBank = null,
+    Object? hotelsInBank = null,
+    Object? suppressedCells = null,
+    Object? suppressedBy = null,
+    Object? blackoutGroupsThisRound = null,
+    Object? nextRentMultiplier = null,
+    Object? nextUtilityFlatTen = null,
   }) {
     return _then(
       _value.copyWith(
@@ -159,6 +214,54 @@ class _$GameStateCopyWithImpl<$Res, $Val extends GameState>
                 ? _value.aiDialogueSpeakerId
                 : aiDialogueSpeakerId // ignore: cast_nullable_to_non_nullable
                       as String?,
+            isWaitingForReconnection: null == isWaitingForReconnection
+                ? _value.isWaitingForReconnection
+                : isWaitingForReconnection // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            disconnectedPlayerName: freezed == disconnectedPlayerName
+                ? _value.disconnectedPlayerName
+                : disconnectedPlayerName // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            reconnectDeadlineMs: freezed == reconnectDeadlineMs
+                ? _value.reconnectDeadlineMs
+                : reconnectDeadlineMs // ignore: cast_nullable_to_non_nullable
+                      as int?,
+            round: null == round
+                ? _value.round
+                : round // ignore: cast_nullable_to_non_nullable
+                      as int,
+            bankruptcyCount: null == bankruptcyCount
+                ? _value.bankruptcyCount
+                : bankruptcyCount // ignore: cast_nullable_to_non_nullable
+                      as int,
+            housesInBank: null == housesInBank
+                ? _value.housesInBank
+                : housesInBank // ignore: cast_nullable_to_non_nullable
+                      as int,
+            hotelsInBank: null == hotelsInBank
+                ? _value.hotelsInBank
+                : hotelsInBank // ignore: cast_nullable_to_non_nullable
+                      as int,
+            suppressedCells: null == suppressedCells
+                ? _value.suppressedCells
+                : suppressedCells // ignore: cast_nullable_to_non_nullable
+                      as List<int>,
+            suppressedBy: null == suppressedBy
+                ? _value.suppressedBy
+                : suppressedBy // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
+            blackoutGroupsThisRound: null == blackoutGroupsThisRound
+                ? _value.blackoutGroupsThisRound
+                : blackoutGroupsThisRound // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
+            nextRentMultiplier: null == nextRentMultiplier
+                ? _value.nextRentMultiplier
+                : nextRentMultiplier // ignore: cast_nullable_to_non_nullable
+                      as int,
+            nextUtilityFlatTen: null == nextUtilityFlatTen
+                ? _value.nextUtilityFlatTen
+                : nextUtilityFlatTen // ignore: cast_nullable_to_non_nullable
+                      as bool,
           )
           as $Val,
     );
@@ -212,6 +315,18 @@ abstract class _$$GameStateImplCopyWith<$Res>
     PendingAction pendingAction,
     String? aiDialogue,
     String? aiDialogueSpeakerId,
+    bool isWaitingForReconnection,
+    String? disconnectedPlayerName,
+    int? reconnectDeadlineMs,
+    int round,
+    int bankruptcyCount,
+    int housesInBank,
+    int hotelsInBank,
+    List<int> suppressedCells,
+    List<String> suppressedBy,
+    List<String> blackoutGroupsThisRound,
+    int nextRentMultiplier,
+    bool nextUtilityFlatTen,
   });
 
   @override
@@ -247,6 +362,18 @@ class __$$GameStateImplCopyWithImpl<$Res>
     Object? pendingAction = null,
     Object? aiDialogue = freezed,
     Object? aiDialogueSpeakerId = freezed,
+    Object? isWaitingForReconnection = null,
+    Object? disconnectedPlayerName = freezed,
+    Object? reconnectDeadlineMs = freezed,
+    Object? round = null,
+    Object? bankruptcyCount = null,
+    Object? housesInBank = null,
+    Object? hotelsInBank = null,
+    Object? suppressedCells = null,
+    Object? suppressedBy = null,
+    Object? blackoutGroupsThisRound = null,
+    Object? nextRentMultiplier = null,
+    Object? nextUtilityFlatTen = null,
   }) {
     return _then(
       _$GameStateImpl(
@@ -302,6 +429,54 @@ class __$$GameStateImplCopyWithImpl<$Res>
             ? _value.aiDialogueSpeakerId
             : aiDialogueSpeakerId // ignore: cast_nullable_to_non_nullable
                   as String?,
+        isWaitingForReconnection: null == isWaitingForReconnection
+            ? _value.isWaitingForReconnection
+            : isWaitingForReconnection // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        disconnectedPlayerName: freezed == disconnectedPlayerName
+            ? _value.disconnectedPlayerName
+            : disconnectedPlayerName // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        reconnectDeadlineMs: freezed == reconnectDeadlineMs
+            ? _value.reconnectDeadlineMs
+            : reconnectDeadlineMs // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        round: null == round
+            ? _value.round
+            : round // ignore: cast_nullable_to_non_nullable
+                  as int,
+        bankruptcyCount: null == bankruptcyCount
+            ? _value.bankruptcyCount
+            : bankruptcyCount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        housesInBank: null == housesInBank
+            ? _value.housesInBank
+            : housesInBank // ignore: cast_nullable_to_non_nullable
+                  as int,
+        hotelsInBank: null == hotelsInBank
+            ? _value.hotelsInBank
+            : hotelsInBank // ignore: cast_nullable_to_non_nullable
+                  as int,
+        suppressedCells: null == suppressedCells
+            ? _value._suppressedCells
+            : suppressedCells // ignore: cast_nullable_to_non_nullable
+                  as List<int>,
+        suppressedBy: null == suppressedBy
+            ? _value._suppressedBy
+            : suppressedBy // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
+        blackoutGroupsThisRound: null == blackoutGroupsThisRound
+            ? _value._blackoutGroupsThisRound
+            : blackoutGroupsThisRound // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
+        nextRentMultiplier: null == nextRentMultiplier
+            ? _value.nextRentMultiplier
+            : nextRentMultiplier // ignore: cast_nullable_to_non_nullable
+                  as int,
+        nextUtilityFlatTen: null == nextUtilityFlatTen
+            ? _value.nextUtilityFlatTen
+            : nextUtilityFlatTen // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -324,9 +499,24 @@ class _$GameStateImpl extends _GameState {
     this.pendingAction = const PendingAction.none(),
     this.aiDialogue,
     this.aiDialogueSpeakerId,
+    this.isWaitingForReconnection = false,
+    this.disconnectedPlayerName,
+    this.reconnectDeadlineMs,
+    this.round = 1,
+    this.bankruptcyCount = 0,
+    this.housesInBank = GameRules.housesInSupply,
+    this.hotelsInBank = GameRules.hotelsInSupply,
+    final List<int> suppressedCells = const [],
+    final List<String> suppressedBy = const [],
+    final List<String> blackoutGroupsThisRound = const [],
+    this.nextRentMultiplier = 1,
+    this.nextUtilityFlatTen = false,
   }) : _board = board,
        _players = players,
        _log = log,
+       _suppressedCells = suppressedCells,
+       _suppressedBy = suppressedBy,
+       _blackoutGroupsThisRound = blackoutGroupsThisRound,
        super._();
 
   factory _$GameStateImpl.fromJson(Map<String, dynamic> json) =>
@@ -389,9 +579,84 @@ class _$GameStateImpl extends _GameState {
   @override
   final String? aiDialogueSpeakerId;
 
+  /// Online: an operative left presence and grace timer is running.
+  @override
+  @JsonKey()
+  final bool isWaitingForReconnection;
+  @override
+  final String? disconnectedPlayerName;
+
+  /// Epoch ms when [disconnectAiGrace] expires (host-authored, synced).
+  @override
+  final int? reconnectDeadlineMs;
+
+  /// Table round, 1-based. A round completes when the turn wraps to the
+  /// first seat. Blitz ends as round [GameRules.blitzRoundLimit] + 1 starts.
+  @override
+  @JsonKey()
+  final int round;
+  @override
+  @JsonKey()
+  final int bankruptcyCount;
+  @override
+  @JsonKey()
+  final int housesInBank;
+  @override
+  @JsonKey()
+  final int hotelsInBank;
+
+  /// Cell indexes whose rent is calculated one tier lower.
+  final List<int> _suppressedCells;
+
+  /// Cell indexes whose rent is calculated one tier lower.
+  @override
+  @JsonKey()
+  List<int> get suppressedCells {
+    if (_suppressedCells is EqualUnmodifiableListView) return _suppressedCells;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_suppressedCells);
+  }
+
+  /// Hacker id aligned with [suppressedCells]. Cleared when that operative's
+  /// next turn starts.
+  final List<String> _suppressedBy;
+
+  /// Hacker id aligned with [suppressedCells]. Cleared when that operative's
+  /// next turn starts.
+  @override
+  @JsonKey()
+  List<String> get suppressedBy {
+    if (_suppressedBy is EqualUnmodifiableListView) return _suppressedBy;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_suppressedBy);
+  }
+
+  /// [ColorGroup.name] values already blacked out this round.
+  final List<String> _blackoutGroupsThisRound;
+
+  /// [ColorGroup.name] values already blacked out this round.
+  @override
+  @JsonKey()
+  List<String> get blackoutGroupsThisRound {
+    if (_blackoutGroupsThisRound is EqualUnmodifiableListView)
+      return _blackoutGroupsThisRound;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_blackoutGroupsThisRound);
+  }
+
+  /// Next rent resolution is multiplied (Maglev breach = 2). Cleared after use.
+  @override
+  @JsonKey()
+  final int nextRentMultiplier;
+
+  /// Next utility bill is 10× dice regardless of how many grids the owner holds.
+  @override
+  @JsonKey()
+  final bool nextUtilityFlatTen;
+
   @override
   String toString() {
-    return 'GameState(board: $board, players: $players, activePlayerIndex: $activePlayerIndex, phase: $phase, lastRoll: $lastRoll, consecutiveDoubles: $consecutiveDoubles, moveFromIndex: $moveFromIndex, moveStepsLeft: $moveStepsLeft, log: $log, winnerId: $winnerId, pendingAction: $pendingAction, aiDialogue: $aiDialogue, aiDialogueSpeakerId: $aiDialogueSpeakerId)';
+    return 'GameState(board: $board, players: $players, activePlayerIndex: $activePlayerIndex, phase: $phase, lastRoll: $lastRoll, consecutiveDoubles: $consecutiveDoubles, moveFromIndex: $moveFromIndex, moveStepsLeft: $moveStepsLeft, log: $log, winnerId: $winnerId, pendingAction: $pendingAction, aiDialogue: $aiDialogue, aiDialogueSpeakerId: $aiDialogueSpeakerId, isWaitingForReconnection: $isWaitingForReconnection, disconnectedPlayerName: $disconnectedPlayerName, reconnectDeadlineMs: $reconnectDeadlineMs, round: $round, bankruptcyCount: $bankruptcyCount, housesInBank: $housesInBank, hotelsInBank: $hotelsInBank, suppressedCells: $suppressedCells, suppressedBy: $suppressedBy, blackoutGroupsThisRound: $blackoutGroupsThisRound, nextRentMultiplier: $nextRentMultiplier, nextUtilityFlatTen: $nextUtilityFlatTen)';
   }
 
   @override
@@ -420,12 +685,44 @@ class _$GameStateImpl extends _GameState {
             (identical(other.aiDialogue, aiDialogue) ||
                 other.aiDialogue == aiDialogue) &&
             (identical(other.aiDialogueSpeakerId, aiDialogueSpeakerId) ||
-                other.aiDialogueSpeakerId == aiDialogueSpeakerId));
+                other.aiDialogueSpeakerId == aiDialogueSpeakerId) &&
+            (identical(
+                  other.isWaitingForReconnection,
+                  isWaitingForReconnection,
+                ) ||
+                other.isWaitingForReconnection == isWaitingForReconnection) &&
+            (identical(other.disconnectedPlayerName, disconnectedPlayerName) ||
+                other.disconnectedPlayerName == disconnectedPlayerName) &&
+            (identical(other.reconnectDeadlineMs, reconnectDeadlineMs) ||
+                other.reconnectDeadlineMs == reconnectDeadlineMs) &&
+            (identical(other.round, round) || other.round == round) &&
+            (identical(other.bankruptcyCount, bankruptcyCount) ||
+                other.bankruptcyCount == bankruptcyCount) &&
+            (identical(other.housesInBank, housesInBank) ||
+                other.housesInBank == housesInBank) &&
+            (identical(other.hotelsInBank, hotelsInBank) ||
+                other.hotelsInBank == hotelsInBank) &&
+            const DeepCollectionEquality().equals(
+              other._suppressedCells,
+              _suppressedCells,
+            ) &&
+            const DeepCollectionEquality().equals(
+              other._suppressedBy,
+              _suppressedBy,
+            ) &&
+            const DeepCollectionEquality().equals(
+              other._blackoutGroupsThisRound,
+              _blackoutGroupsThisRound,
+            ) &&
+            (identical(other.nextRentMultiplier, nextRentMultiplier) ||
+                other.nextRentMultiplier == nextRentMultiplier) &&
+            (identical(other.nextUtilityFlatTen, nextUtilityFlatTen) ||
+                other.nextUtilityFlatTen == nextUtilityFlatTen));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     const DeepCollectionEquality().hash(_board),
     const DeepCollectionEquality().hash(_players),
@@ -440,7 +737,19 @@ class _$GameStateImpl extends _GameState {
     pendingAction,
     aiDialogue,
     aiDialogueSpeakerId,
-  );
+    isWaitingForReconnection,
+    disconnectedPlayerName,
+    reconnectDeadlineMs,
+    round,
+    bankruptcyCount,
+    housesInBank,
+    hotelsInBank,
+    const DeepCollectionEquality().hash(_suppressedCells),
+    const DeepCollectionEquality().hash(_suppressedBy),
+    const DeepCollectionEquality().hash(_blackoutGroupsThisRound),
+    nextRentMultiplier,
+    nextUtilityFlatTen,
+  ]);
 
   /// Create a copy of GameState
   /// with the given fields replaced by the non-null parameter values.
@@ -471,6 +780,18 @@ abstract class _GameState extends GameState {
     final PendingAction pendingAction,
     final String? aiDialogue,
     final String? aiDialogueSpeakerId,
+    final bool isWaitingForReconnection,
+    final String? disconnectedPlayerName,
+    final int? reconnectDeadlineMs,
+    final int round,
+    final int bankruptcyCount,
+    final int housesInBank,
+    final int hotelsInBank,
+    final List<int> suppressedCells,
+    final List<String> suppressedBy,
+    final List<String> blackoutGroupsThisRound,
+    final int nextRentMultiplier,
+    final bool nextUtilityFlatTen,
   }) = _$GameStateImpl;
   const _GameState._() : super._();
 
@@ -509,6 +830,48 @@ abstract class _GameState extends GameState {
   String? get aiDialogue;
   @override
   String? get aiDialogueSpeakerId;
+
+  /// Online: an operative left presence and grace timer is running.
+  @override
+  bool get isWaitingForReconnection;
+  @override
+  String? get disconnectedPlayerName;
+
+  /// Epoch ms when [disconnectAiGrace] expires (host-authored, synced).
+  @override
+  int? get reconnectDeadlineMs;
+
+  /// Table round, 1-based. A round completes when the turn wraps to the
+  /// first seat. Blitz ends as round [GameRules.blitzRoundLimit] + 1 starts.
+  @override
+  int get round;
+  @override
+  int get bankruptcyCount;
+  @override
+  int get housesInBank;
+  @override
+  int get hotelsInBank;
+
+  /// Cell indexes whose rent is calculated one tier lower.
+  @override
+  List<int> get suppressedCells;
+
+  /// Hacker id aligned with [suppressedCells]. Cleared when that operative's
+  /// next turn starts.
+  @override
+  List<String> get suppressedBy;
+
+  /// [ColorGroup.name] values already blacked out this round.
+  @override
+  List<String> get blackoutGroupsThisRound;
+
+  /// Next rent resolution is multiplied (Maglev breach = 2). Cleared after use.
+  @override
+  int get nextRentMultiplier;
+
+  /// Next utility bill is 10× dice regardless of how many grids the owner holds.
+  @override
+  bool get nextUtilityFlatTen;
 
   /// Create a copy of GameState
   /// with the given fields replaced by the non-null parameter values.

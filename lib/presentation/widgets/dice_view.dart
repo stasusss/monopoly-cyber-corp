@@ -25,6 +25,7 @@ class _DiceViewState extends State<DiceView>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   final _rng = math.Random();
+  bool _burst = false;
 
   @override
   void initState() {
@@ -32,7 +33,15 @@ class _DiceViewState extends State<DiceView>
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
-    );
+    )..addStatusListener(_onStatus);
+  }
+
+  void _onStatus(AnimationStatus status) {
+    if (status != AnimationStatus.completed || widget.roll == null) return;
+    setState(() => _burst = true);
+    Future<void>.delayed(const Duration(milliseconds: 120), () {
+      if (mounted) setState(() => _burst = false);
+    });
   }
 
   @override
@@ -68,12 +77,12 @@ class _DiceViewState extends State<DiceView>
           children: [
             Transform.translate(
               offset: Offset(shake, -shake),
-              child: _NeonDie(value: d1 == 0 ? null : d1),
+              child: _NeonDie(value: d1 == 0 ? null : d1, burst: _burst),
             ),
             const SizedBox(width: 12),
             Transform.translate(
               offset: Offset(-shake, shake),
-              child: _NeonDie(value: d2 == 0 ? null : d2),
+              child: _NeonDie(value: d2 == 0 ? null : d2, burst: _burst),
             ),
             if (widget.roll != null && !glitch) ...[
               const SizedBox(width: 12),
@@ -83,9 +92,7 @@ class _DiceViewState extends State<DiceView>
                   color: CyberColors.cyberYellow,
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
-                  shadows: CyberTheme.glow(CyberColors.cyberYellow, blur: 8)
-                      .map((s) => Shadow(color: s.color, blurRadius: s.blurRadius))
-                      .toList(),
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ],
@@ -97,9 +104,10 @@ class _DiceViewState extends State<DiceView>
 }
 
 class _NeonDie extends StatelessWidget {
-  const _NeonDie({required this.value});
+  const _NeonDie({required this.value, required this.burst});
 
   final int? value;
+  final bool burst;
 
   @override
   Widget build(BuildContext context) {
@@ -108,10 +116,17 @@ class _NeonDie extends StatelessWidget {
       height: 40,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: CyberColors.panel,
+        color: burst
+            ? CyberColors.cyberYellow.withValues(alpha: 0.35)
+            : CyberColors.panel,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: CyberColors.cyberYellow, width: 1.6),
-        boxShadow: CyberTheme.glow(CyberColors.cyberYellow, blur: 10),
+        border: Border.all(
+          color: CyberColors.cyberYellow,
+          width: burst ? 2.4 : 1.6,
+        ),
+        boxShadow: burst
+            ? CyberTheme.glow(CyberColors.cyberYellow, blur: 16)
+            : null,
       ),
       child: Text(
         value?.toString() ?? '·',

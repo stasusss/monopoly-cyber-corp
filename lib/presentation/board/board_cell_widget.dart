@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -5,23 +7,23 @@ import '../../core/constants/game_rules.dart';
 import '../../core/constants/street_colors.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../models/cell.dart';
-import 'board_geometry.dart';
 
 class BoardCellWidget extends StatelessWidget {
   const BoardCellWidget({
     super.key,
     required this.cell,
     required this.ownerColor,
+    this.onTap,
+    this.selected = false,
   });
 
   final BoardCell cell;
   final Color? ownerColor;
+  final VoidCallback? onTap;
+  final bool selected;
 
-  @override
-  Widget build(BuildContext context) {
-    final isCorner = BoardGeometry.isCorner(cell.index);
-    final rotation = _labelRotation(cell.index);
-    final accent = switch (cell) {
+  static Color accentOf(BoardCell cell) {
+    return switch (cell) {
       PropertyCell(:final colorGroup) => colorGroup.swatch,
       SpecialCell(:final kind) => switch (kind) {
           SpecialKind.go => CyberColors.terminalGreen,
@@ -33,84 +35,113 @@ class BoardCellWidget extends StatelessWidget {
       TaxCell() => CyberColors.neonMagenta,
       RailroadCell() || UtilityCell() => CyberColors.neonCyan,
     };
+  }
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: CyberColors.panel.withValues(alpha: 0.92),
-        border: Border.all(
-          color: accent.withValues(alpha: 0.55),
-          width: 0.7,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.12),
-            blurRadius: 4,
+  @override
+  Widget build(BuildContext context) {
+    final accent = accentOf(cell);
+    final property = cell is PropertyCell ? cell as PropertyCell : null;
+    final mortgaged = cell.isMortgagedOrFalse;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: accent.withValues(alpha: 0.16),
+        splashColor: accent.withValues(alpha: 0.28),
+        highlightColor: accent.withValues(alpha: 0.1),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: CyberColors.panel.withValues(alpha: 0.92),
+            border: Border.all(
+              color: selected ? CyberColors.neonCyan : CyberColors.gridLine,
+              width: selected ? 1.6 : 0.7,
+            ),
+            boxShadow: selected
+                ? CyberTheme.glow(CyberColors.neonCyan, blur: 8)
+                : null,
           ),
-        ],
-      ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (cell is PropertyCell)
-            _ColorBand(
-              group: (cell as PropertyCell).colorGroup,
-              index: cell.index,
-            ),
-          Padding(
-            padding: EdgeInsets.only(
-              top: cell is PropertyCell && _bandOnTop(cell.index) ? 10 : 2,
-              bottom: cell is PropertyCell && !_bandOnTop(cell.index) ? 10 : 2,
-              left: 2,
-              right: 2,
-            ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Transform.rotate(
-                angle: rotation,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _shortLabel(cell),
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.shareTechMono(
-                        fontSize: isCorner ? 8 : 6.5,
-                        fontWeight: FontWeight.w700,
-                        height: 1.05,
-                        color: CyberColors.textPrimary,
-                        letterSpacing: 0.3,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final side = math.min(constraints.maxWidth, constraints.maxHeight);
+              final labelSize = (side / 6.4).clamp(7.0, 14.0);
+              final priceSize = (labelSize * 0.85).clamp(7.0, 12.0);
+              final band = (side * 0.12).clamp(4.0, 10.0);
+              final bandOnTop = _bandOnTop(cell.index);
+
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (mortgaged) const CustomPaint(painter: _MortgageHatch()),
+                  if (property != null)
+                    _ColorBand(
+                      color: property.colorGroup.swatch,
+                      onTop: bandOnTop,
+                      thickness: band,
+                    ),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: property != null && bandOnTop ? band + 1 : 2,
+                      bottom: property != null && !bandOnTop ? band + 1 : 2,
+                      left: 2,
+                      right: 2,
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _shortLabel(cell),
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.shareTechMono(
+                              fontSize: labelSize,
+                              fontWeight: FontWeight.w700,
+                              height: 1.05,
+                              color: CyberColors.textPrimary,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          if (cell.priceOrNull != null)
+                            Text(
+                              GameRules.credits(cell.priceOrNull!),
+                              style: GoogleFonts.shareTechMono(
+                                fontSize: priceSize,
+                                fontWeight: FontWeight.w700,
+                                color: CyberColors.cyberYellow,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                    if (cell.priceOrNull != null)
-                      Text(
-                        GameRules.credits(cell.priceOrNull!),
-                        style: GoogleFonts.shareTechMono(
-                          fontSize: 7,
-                          fontWeight: FontWeight.w700,
-                          color: CyberColors.cyberYellow,
+                  ),
+                  if (property != null && property.houses > 0)
+                    _DevMarks(
+                      houses: property.houses,
+                      onTop: !bandOnTop,
+                    ),
+                  if (ownerColor != null)
+                    Positioned(
+                      right: 2,
+                      bottom: 2,
+                      child: Container(
+                        width: math.max(6, side * 0.16),
+                        height: math.max(6, side * 0.16),
+                        decoration: BoxDecoration(
+                          color: ownerColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white24, width: 0.6),
                         ),
                       ),
-                  ],
-                ),
-              ),
-            ),
+                    ),
+                ],
+              );
+            },
           ),
-          if (ownerColor != null)
-            Positioned(
-              right: 2,
-              bottom: 2,
-              child: Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: ownerColor,
-                  shape: BoxShape.circle,
-                  boxShadow: CyberTheme.glow(ownerColor!, blur: 6),
-                  border: Border.all(color: Colors.white24, width: 0.5),
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -123,13 +154,7 @@ class BoardCellWidget extends StatelessWidget {
     return true;
   }
 
-  static double _labelRotation(int index) {
-    if (index >= 11 && index <= 19) return 1.5708;
-    if (index >= 21 && index <= 29) return 3.14159;
-    if (index >= 31 && index <= 39) return -1.5708;
-    return 0;
-  }
-
+  /// Short code sized to a cell. The full street name lives on the deed sheet.
   static String _shortLabel(BoardCell cell) {
     return switch (cell) {
       SpecialCell(:final kind) => switch (kind) {
@@ -148,35 +173,99 @@ class BoardCellWidget extends StatelessWidget {
       RailroadCell(:final name) => name
           .replaceFirst('MAGLEV STATION ', 'MAGLEV\n'),
       UtilityCell(:final name) => name.split(' ').take(2).join('\n'),
-      _ => cell.name,
+      PropertyCell(:final name) => _streetCode(name),
     };
+  }
+
+  static String _streetCode(String name) {
+    final words =
+        name.split(RegExp(r'[\s\-]+')).where((w) => w.isNotEmpty).toList();
+    if (words.isEmpty) return name;
+    final word = words.first.toUpperCase();
+    return word.length <= 6 ? word : word.substring(0, 6);
   }
 }
 
 class _ColorBand extends StatelessWidget {
-  const _ColorBand({required this.group, required this.index});
+  const _ColorBand({
+    required this.color,
+    required this.onTop,
+    required this.thickness,
+  });
 
-  final ColorGroup group;
-  final int index;
+  final Color color;
+  final bool onTop;
+  final double thickness;
 
   @override
   Widget build(BuildContext context) {
-    final top = BoardCellWidget._bandOnTop(index);
     return Align(
-      alignment: top ? Alignment.topCenter : Alignment.bottomCenter,
+      alignment: onTop ? Alignment.topCenter : Alignment.bottomCenter,
       child: Container(
-        height: 9,
+        height: thickness,
         width: double.infinity,
-        decoration: BoxDecoration(
-          color: group.swatch,
-          boxShadow: [
-            BoxShadow(
-              color: group.swatch.withValues(alpha: 0.7),
-              blurRadius: 6,
-            ),
-          ],
-        ),
+        color: color,
       ),
     );
   }
+}
+
+class _DevMarks extends StatelessWidget {
+  const _DevMarks({required this.houses, required this.onTop});
+
+  final int houses;
+  final bool onTop;
+
+  @override
+  Widget build(BuildContext context) {
+    final hq = houses >= 5;
+    return Align(
+      alignment: onTop ? Alignment.topCenter : Alignment.bottomCenter,
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: hq
+            ? Container(
+                width: 16,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: CyberColors.neonMagenta,
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var i = 0; i < houses; i++)
+                    Container(
+                      width: 3,
+                      height: 5,
+                      margin: const EdgeInsets.symmetric(horizontal: 0.6),
+                      color: CyberColors.terminalGreen,
+                    ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _MortgageHatch extends CustomPainter {
+  const _MortgageHatch();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = CyberColors.neonMagenta.withValues(alpha: 0.28)
+      ..strokeWidth = 1;
+    for (double x = -size.height; x < size.width; x += 6) {
+      canvas.drawLine(
+        Offset(x, size.height),
+        Offset(x + size.height, 0),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

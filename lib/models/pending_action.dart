@@ -54,7 +54,14 @@ sealed class PendingAction with _$PendingAction {
   const factory PendingAction.winner({
     required String playerId,
     required String playerName,
+    @Default(0) int netWorth,
   }) = PendingWinner;
+
+  /// Eminent-domain / once-per-game district claim. Player picks a blocker.
+  const factory PendingAction.claimOffer({
+    required List<int> cellIndexes,
+    required bool consumesBuyout,
+  }) = PendingClaimOffer;
 
   factory PendingAction.fromJson(Map<String, dynamic> json) =>
       _$PendingActionFromJson(json);

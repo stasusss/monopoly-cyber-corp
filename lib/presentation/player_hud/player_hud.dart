@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import '../../core/constants/game_rules.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
 import '../../models/cell.dart';
 import '../../models/player.dart';
+import '../widgets/animated_credits.dart';
 
 class PlayerHud extends ConsumerWidget {
   const PlayerHud({super.key});
@@ -93,9 +94,9 @@ class _PlayerCard extends StatelessWidget {
                     player.name.isNotEmpty
                         ? player.name[0].toUpperCase()
                         : '?',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Colors.white,
+                      color: player.tokenColor.ink,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -113,12 +114,13 @@ class _PlayerCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                Text(
-                  GameRules.credits(player.balance),
-                  style: const TextStyle(
+                AnimatedCredits(
+                  amount: player.balance,
+                  style: GoogleFonts.shareTechMono(
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
                     color: CyberColors.cyberYellow,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ],
@@ -147,7 +149,7 @@ class _PlayerCard extends StatelessWidget {
                 padding: EdgeInsets.only(top: 4),
                 child: Text(
                   'Немає власності',
-                  style: TextStyle(fontSize: 11, color: Colors.black54),
+                  style: TextStyle(fontSize: 11, color: CyberColors.textMuted),
                 ),
               ),
           ],

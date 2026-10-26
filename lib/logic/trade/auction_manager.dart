@@ -1,6 +1,8 @@
+import '../../core/constants/game_rules.dart';
 import '../../models/game_state.dart';
 import '../../models/player.dart';
 import '../ai/ai_decision_matrix.dart';
+import '../nightfall.dart';
 import '../rules_engine.dart';
 
 /// Live auction for a declined property purchase.
@@ -74,15 +76,14 @@ abstract final class AuctionManager {
   }
 
   static bool placeBid(AuctionState auction, String playerId, int amount) {
+    final floor = Nightfall.minAuctionBid(auction.highestBid);
+    if (amount < floor) return false;
     if (amount <= auction.highestBid) return false;
     auction.highestBid = amount;
     auction.highestBidderId = playerId;
+    // A pass sticks for the rest of the lot. Only the new high bidder
+    // re-enters; everyone who already folded stays folded.
     auction.passedIds.remove(playerId);
-    // Everyone else must respond again except current high bidder.
-    auction.passedIds.removeWhere((id) => id == playerId);
-    for (final id in auction.participantIds) {
-      if (id != playerId) auction.passedIds.remove(id);
-    }
     _advance(auction);
     return true;
   }
@@ -125,8 +126,11 @@ abstract final class AuctionManager {
     final buffer = AiDecisionMatrix.cashBuffer(gameStateForMatrix, ai);
     final affordable = ai.balance - buffer;
     final ceiling = [maxBid, affordable].reduce((a, b) => a < b ? a : b);
-    final next = auction.highestBid + 10;
-    if (next > ceiling || !RulesEngine.canAfford(ai, next)) return 0;
-    return next;
+    if (ai.id == auction.highestBidderId) return 0;
+    final floor = Nightfall.minAuctionBid(auction.highestBid);
+    if (ceiling < floor || !RulesEngine.canAfford(ai, ceiling)) return 0;
+    // One number: the bot names its ceiling instead of crawling by ₵10.
+    if (ceiling < GameRules.auctionBidStep) return 0;
+    return ceiling;
   }
 }

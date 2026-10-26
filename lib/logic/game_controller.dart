@@ -22,6 +22,7 @@ import 'cards/game_card.dart';
 import 'network/network_action.dart';
 import 'network/online_session.dart';
 import 'network/supabase_realtime_service.dart';
+import 'nightfall.dart';
 import 'rules_engine.dart';
 import 'trade/auction_manager.dart';
 import 'trade/trade_manager.dart';
@@ -62,6 +63,7 @@ class GameController extends StateNotifier<GameState>
 
   OnlineSession? _online;
   bool _applyingRemote = false;
+  String? _lastKnownHostId;
   StreamSubscription<NetworkAction>? _actionSub;
   StreamSubscription<Map<String, dynamic>>? _syncSub;
   StreamSubscription<List<PresenceMember>>? _presenceSub;
@@ -147,6 +149,24 @@ class GameController extends StateNotifier<GameState>
   @override
   void aiDeclineTrade() => declineTrade();
 
+  @override
+  void aiUseJailCard() => useJailCard();
+
+  @override
+  void aiDrawOverdraft() => drawOverdraft();
+
+  @override
+  void aiBuyout(int cellIndex) => buyout(cellIndex);
+
+  @override
+  void aiBlackout(int cellIndex) => blackout(cellIndex);
+
+  @override
+  void aiAcceptClaim(int cellIndex) => acceptClaim(cellIndex);
+
+  @override
+  void aiDeclineClaim() => declineClaim();
+
   // —— Public API ————————————————————————————————————————————————
 
   void rollDice() {
@@ -193,15 +213,10 @@ class GameController extends StateNotifier<GameState>
 
     final player = _active;
     final nextPos = (player.position + 1) % GameRules.boardSize;
-    var balance = player.balance;
     final passedGo = nextPos == GameRules.goIndex;
-    if (passedGo) {
-      balance += GameRules.goSalary;
-    }
-
     final updatedPlayer = player.copyWith(
       position: nextPos,
-      balance: balance,
+      balance: passedGo ? player.balance + GameRules.goSalary : player.balance,
     );
     final stepsLeft = state.moveStepsLeft - 1;
 
@@ -210,12 +225,20 @@ class GameController extends StateNotifier<GameState>
       moveStepsLeft: stepsLeft,
       log: passedGo
           ? _append(
-              '${player.name} проходить Старт і отримує \$${GameRules.goSalary}.',
+              '${player.name} проходить Старт і отримує ${GameRules.credits(GameRules.goSalary)}.',
             )
           : state.log,
     );
 
-    if (stepsLeft == 0) {
+    if (passedGo) {
+      _skimOverdraftOnActive();
+      if (state.isGameOver || _active.isBankrupt) {
+        state = state.copyWith(moveStepsLeft: 0, moveFromIndex: null);
+        return;
+      }
+    }
+
+    if (stepsLeft == 0 && state.phase == TurnPhase.movingToken) {
       state = state.copyWith(
         phase: TurnPhase.cellAction,
         moveFromIndex: null,
@@ -352,7 +375,8 @@ class GameController extends StateNotifier<GameState>
     if (pending is PendingBuyOffer ||
         pending is PendingWinner ||
         pending is PendingAuction ||
-        pending is PendingTradeOffer) {
+        pending is PendingTradeOffer ||
+        pending is PendingClaimOffer) {
       return;
     }
     if (pending is PendingNone) return;
@@ -442,7 +466,7 @@ class GameController extends StateNotifier<GameState>
     if (_clientSend(NetworkActionType.buildHouse, {'cellIndex': cellIndex})) {
       return false;
     }
-    if (!_allowActivePlayerAction()) return false;
+    if (!_canManageEmpire()) return false;
     final cell = state.cellAt(cellIndex);
     if (cell is! PropertyCell || cell.ownerId != _active.id) return false;
     if (cell.isMortgaged || cell.houses >= 5) return false;
@@ -461,7 +485,14 @@ class GameController extends StateNotifier<GameState>
         group.map((c) => c.houses).reduce((a, b) => a < b ? a : b);
     if (cell.houses > minHouses) return false;
 
-    final cost = cell.colorGroup.houseCost;
+    final buildingHotel = cell.houses >= 4;
+    if (buildingHotel) {
+      if (state.hotelsInBank <= 0) return false;
+    } else if (state.housesInBank <= 0) {
+      return false;
+    }
+
+    final cost = Nightfall.nodeCost(cell.colorGroup, cell.houses);
     if (!RulesEngine.canAfford(_active, cost)) return false;
 
     final board = [...state.board];
@@ -470,13 +501,29 @@ class GameController extends StateNotifier<GameState>
     state = state.copyWith(
       board: board,
       players: _replacePlayer(buyer),
+      housesInBank: buildingHotel
+          ? (state.housesInBank + 4).clamp(0, GameRules.housesInSupply)
+          : state.housesInBank - 1,
+      hotelsInBank:
+          buildingHotel ? state.hotelsInBank - 1 : state.hotelsInBank,
       log: _append(
-        '${buyer.name} будує на «${cell.name}» '
-        '(${cell.houses + 1}/5) за \$$cost.',
+        '${buyer.name} builds on «${cell.name}» '
+        '(${cell.houses + 1}/5) for ${GameRules.credits(cost)}.',
       ),
     );
     _hostSync();
     return true;
+  }
+
+  /// Sell one node on [cellIndex]. Returns cash raised.
+  int sellNode(int cellIndex) {
+    if (_clientSend(NetworkActionType.sellHouse, {'cellIndex': cellIndex})) {
+      return 0;
+    }
+    if (!_canManageEmpire()) return 0;
+    final cell = state.cellAt(cellIndex);
+    if (cell is! PropertyCell || cell.ownerId != _active.id) return 0;
+    return sellHouse(cellIndex);
   }
 
   /// Mortgage an owned unimproved property; returns cash raised (0 if failed).
@@ -516,6 +563,188 @@ class GameController extends StateNotifier<GameState>
     return mortgage;
   }
 
+  /// Player-facing mortgage. [mortgageProperty] stays available mid-resolution.
+  bool pledgeProperty(int cellIndex) {
+    if (_clientSend(NetworkActionType.mortgage, {'cellIndex': cellIndex})) {
+      return false;
+    }
+    if (!_canManageEmpire()) return false;
+    final cell = state.cellAt(cellIndex);
+    if (cell.ownerIdOrNull != _active.id) return false;
+    return mortgageProperty(cellIndex) > 0;
+  }
+
+  bool unmortgageProperty(int cellIndex) {
+    if (_clientSend(NetworkActionType.unmortgage, {'cellIndex': cellIndex})) {
+      return false;
+    }
+    if (!_canManageEmpire()) return false;
+    final cell = state.cellAt(cellIndex);
+    if (cell.ownerIdOrNull != _active.id || !cell.isMortgagedOrFalse) {
+      return false;
+    }
+    if (cell is PropertyCell && cell.houses > 0) return false;
+    final cost = Nightfall.unmortgageCost(Nightfall.mortgageValue(cell));
+    if (cost <= 0 || !RulesEngine.canAfford(_active, cost)) return false;
+
+    final board = [...state.board];
+    board[cellIndex] = switch (cell) {
+      PropertyCell c => c.copyWith(isMortgaged: false),
+      RailroadCell c => c.copyWith(isMortgaged: false),
+      UtilityCell c => c.copyWith(isMortgaged: false),
+      _ => cell,
+    };
+    final player = _active.copyWith(balance: _active.balance - cost);
+    state = state.copyWith(
+      board: board,
+      players: _replacePlayer(player),
+      log: _append(
+        '${player.name} lifts ICE on «${cell.name}» '
+        '(−${GameRules.credits(cost)}).',
+      ),
+    );
+    _hostSync();
+    return true;
+  }
+
+  void useJailCard() {
+    if (_clientSend(NetworkActionType.useJailCard)) return;
+    if (!_allowActivePlayerAction()) return;
+    final player = _active;
+    if (!player.inJail ||
+        state.phase != TurnPhase.waitingForRoll ||
+        player.getOutOfJailCards <= 0) {
+      return;
+    }
+    final sources = [...player.jailCardSources];
+    final sourceName =
+        sources.isEmpty ? CardDeckKind.dataBreach.name : sources.removeAt(0);
+    final kind = CardDeckKind.values.byName(sourceName);
+    _decks.returnGetOutCard(kind);
+    final freed = player.copyWith(
+      inJail: false,
+      jailTurns: 0,
+      getOutOfJailCards: player.getOutOfJailCards - 1,
+      jailCardSources: sources,
+    );
+    state = state.copyWith(
+      players: _replacePlayer(freed),
+      log: _append('${freed.name} burns an ICE nullifier and walks.'),
+    );
+    _pokeAi();
+    _hostSync();
+  }
+
+  void drawOverdraft() {
+    if (_clientSend(NetworkActionType.overdraft)) return;
+    if (!_canManageEmpire()) return;
+    final player = _active;
+    if (player.overdraftUsed) return;
+    final principal = Nightfall.overdraftPrincipal(state, player);
+    if (principal <= 0) return;
+    final total = (principal * 3) ~/ 2;
+    final debtor = player.copyWith(
+      balance: player.balance + principal,
+      overdraftUsed: true,
+      overdraftRemaining: total,
+      overdraftInstallmentsLeft: 2,
+    );
+    state = state.copyWith(
+      players: _replacePlayer(debtor),
+      log: _append(
+        '${debtor.name} draws a syndicate overdraft of '
+        '${GameRules.credits(principal)} '
+        '(repay ${GameRules.credits(total)} over two resets).',
+      ),
+    );
+    _hostSync();
+  }
+
+  bool buyout(int cellIndex) {
+    if (_clientSend(NetworkActionType.buyout, {'cellIndex': cellIndex})) {
+      return false;
+    }
+    if (!_canManageEmpire()) return false;
+    if (_active.buyoutUsed) return false;
+    if (!Nightfall.claimTargets(state, _active).contains(cellIndex)) {
+      return false;
+    }
+    return _executeBuyout(cellIndex, consumeCharge: true);
+  }
+
+  void requestClaim() {
+    if (_clientSend(NetworkActionType.requestClaim)) return;
+    if (!_canManageEmpire()) return;
+    if (_active.buyoutUsed) return;
+    _beginClaim(consumesBuyout: true);
+    _pokeAi();
+    _hostSync();
+  }
+
+  void acceptClaim(int cellIndex) {
+    if (_clientSend(NetworkActionType.acceptClaim, {'cellIndex': cellIndex})) {
+      return;
+    }
+    if (!_allowActivePlayerAction()) return;
+    final pending = state.pendingAction;
+    if (pending is! PendingClaimOffer) return;
+    if (!pending.cellIndexes.contains(cellIndex)) return;
+    if (pending.consumesBuyout && _active.buyoutUsed) return;
+    if (!_executeBuyout(cellIndex, consumeCharge: pending.consumesBuyout)) {
+      return;
+    }
+    _clearPendingAndContinue();
+    _hostSync();
+  }
+
+  void declineClaim() {
+    if (_clientSend(NetworkActionType.declineClaim)) return;
+    if (!_allowActivePlayerAction()) return;
+    if (state.pendingAction is! PendingClaimOffer) return;
+    state = state.copyWith(
+      pendingAction: const PendingAction.none(),
+      phase: TurnPhase.canEndTurn,
+      log: _append('${_active.name} declines the district claim.'),
+    );
+    _pokeAi();
+    _hostSync();
+  }
+
+  void blackout(int cellIndex) {
+    if (_clientSend(NetworkActionType.blackout, {'cellIndex': cellIndex})) {
+      return;
+    }
+    if (!_canManageEmpire()) return;
+    final player = _active;
+    if (player.blackoutUsedThisTurn) return;
+    final cell = state.cellAt(cellIndex);
+    if (cell is! PropertyCell) return;
+    if (cell.ownerId == null || cell.ownerId == player.id) return;
+    if (cell.houses < 1 || cell.isMortgaged) return;
+    if (state.blackoutGroupsThisRound.contains(cell.colorGroup.name)) return;
+    if (Nightfall.cellSuppressed(state, cellIndex)) return;
+    final cost = Nightfall.blackoutCost(cell.colorGroup);
+    if (!RulesEngine.canAfford(player, cost)) return;
+    final hacker = player.copyWith(
+      balance: player.balance - cost,
+      blackoutUsedThisTurn: true,
+    );
+    state = state.copyWith(
+      players: _replacePlayer(hacker),
+      suppressedCells: [...state.suppressedCells, cellIndex],
+      suppressedBy: [...state.suppressedBy, player.id],
+      blackoutGroupsThisRound: [
+        ...state.blackoutGroupsThisRound,
+        cell.colorGroup.name,
+      ],
+      log: _append(
+        '${hacker.name} blacks out «${cell.name}» '
+        'until their next turn (−${GameRules.credits(cost)}).',
+      ),
+    );
+    _hostSync();
+  }
+
   /// Sell one house on [cellIndex]; returns cash raised.
   int sellHouse(int cellIndex) {
     final cell = state.cellAt(cellIndex);
@@ -530,7 +759,9 @@ class GameController extends StateNotifier<GameState>
         group.map((c) => c.houses).reduce((a, b) => a > b ? a : b);
     if (cell.houses < maxHouses) return 0; // even sell-down
 
-    final refund = cell.colorGroup.houseCost ~/ 2;
+    final refund = Nightfall.nodeRefund(cell.colorGroup, cell.houses);
+    final sellingHotel = cell.houses >= 5;
+    if (sellingHotel && state.housesInBank < 4) return 0;
     final player = state.players.firstWhere((p) => p.id == cell.ownerId);
     final board = [...state.board];
     board[cellIndex] = cell.copyWith(houses: cell.houses - 1);
@@ -540,8 +771,15 @@ class GameController extends StateNotifier<GameState>
       players: _replacePlayer(
         player.copyWith(balance: player.balance + refund),
       ),
+      housesInBank: sellingHotel
+          ? state.housesInBank - 4
+          : (state.housesInBank + 1).clamp(0, GameRules.housesInSupply),
+      hotelsInBank: sellingHotel
+          ? (state.hotelsInBank + 1).clamp(0, GameRules.hotelsInSupply)
+          : state.hotelsInBank,
       log: _append(
-        '${player.name} продає будинок на «${cell.name}» (+$refund\$).',
+        '${player.name} sells a node on «${cell.name}» '
+        '(+${GameRules.credits(refund)}).',
       ),
     );
     return refund;
@@ -589,6 +827,7 @@ class GameController extends StateNotifier<GameState>
   }) {
     detachOnline();
     _online = OnlineSession(localPlayerId: localPlayerId, realtime: realtime);
+    _lastKnownHostId = realtime.hostPlayerId;
     _actionSub = realtime.onActionReceived.listen(_onRemoteAction);
     _syncSub = realtime.onStateSyncReceived.listen(_applyStateSync);
     _presenceSub = realtime.onPresenceChanged.listen(_onPresenceSync);
@@ -639,6 +878,7 @@ class GameController extends StateNotifier<GameState>
     _presenceSub = null;
     _leaveSub = null;
     _online = null;
+    _lastKnownHostId = null;
   }
 
   // —— Dev / QA debug hooks (kDebugMode UI only) ————————————————
@@ -762,9 +1002,19 @@ class GameController extends StateNotifier<GameState>
     final id = localPlayerId;
     if (id == null) return true;
     unawaited(
-      _online!.realtime.sendAction(
-        NetworkAction(type: type, senderId: id, payload: payload),
-      ),
+      () async {
+        try {
+          await _online!.realtime.sendAction(
+            NetworkAction(type: type, senderId: id, payload: payload),
+          );
+        } catch (e, st) {
+          assert(() {
+            // ignore: avoid_print
+            print('client sendAction failed: $e\n$st');
+            return true;
+          }());
+        }
+      }(),
     );
     return true;
   }
@@ -773,6 +1023,16 @@ class GameController extends StateNotifier<GameState>
     if (!isOnline || _applyingRemote) return true;
     if (isHost && state.activePlayer.isAi) return true;
     return state.activePlayer.id == localPlayerId;
+  }
+
+  bool _canManageEmpire() {
+    if (state.isGameOver) return false;
+    if (state.pendingAction is! PendingNone) return false;
+    if (state.phase != TurnPhase.waitingForRoll &&
+        state.phase != TurnPhase.canEndTurn) {
+      return false;
+    }
+    return _allowActivePlayerAction();
   }
 
   bool _allowAuctionActor() {
@@ -809,11 +1069,19 @@ class GameController extends StateNotifier<GameState>
   Future<void> _broadcastSync() async {
     final online = _online;
     if (online == null || !online.isHost) return;
-    await online.realtime.sendStateSync({
-      'game': state.toJson(),
-      'decks': _decks.toJson(),
-      'auction': _auction?.toJson(),
-    });
+    try {
+      await online.realtime.sendStateSync({
+        'game': state.toJson(),
+        'decks': _decks.toJson(),
+        'auction': _auction?.toJson(),
+      });
+    } catch (e, st) {
+      assert(() {
+        // ignore: avoid_print
+        print('host STATE_SYNC failed: $e\n$st');
+        return true;
+      }());
+    }
   }
 
   void _applyStateSync(Map<String, dynamic> envelope) {
@@ -844,31 +1112,92 @@ class GameController extends StateNotifier<GameState>
     }
   }
 
+  bool _senderInSession(String senderId) {
+    if (senderId.isEmpty) return false;
+    final online = _online;
+    if (online == null) return false;
+    if (online.realtime.members.any((m) => m.playerId == senderId)) {
+      return true;
+    }
+    return state.players.any((p) => p.id == senderId);
+  }
+
+  bool _isActivePlayerAction(NetworkActionType type) {
+    return type == NetworkActionType.roll ||
+        type == NetworkActionType.buy ||
+        type == NetworkActionType.declineBuy ||
+        type == NetworkActionType.endTurn ||
+        type == NetworkActionType.dismissNotice ||
+        type == NetworkActionType.payJailFine ||
+        type == NetworkActionType.buildHouse ||
+        type == NetworkActionType.sellHouse ||
+        type == NetworkActionType.mortgage ||
+        type == NetworkActionType.unmortgage ||
+        type == NetworkActionType.useJailCard ||
+        type == NetworkActionType.overdraft ||
+        type == NetworkActionType.buyout ||
+        type == NetworkActionType.blackout ||
+        type == NetworkActionType.requestClaim ||
+        type == NetworkActionType.acceptClaim ||
+        type == NetworkActionType.declineClaim;
+  }
+
   void _onRemoteAction(NetworkAction action) {
     if (!isHost) return;
     if (action.senderId == localPlayerId) return;
+    if (!_senderInSession(action.senderId)) return;
+
+    // Role checks before mutation — never trust client payload blindly.
+    if (_isActivePlayerAction(action.type) &&
+        action.senderId != state.activePlayer.id) {
+      return;
+    }
+    if (action.type == NetworkActionType.tradeAccept ||
+        action.type == NetworkActionType.tradeDecline) {
+      final pending = state.pendingAction;
+      if (pending is! PendingTradeOffer ||
+          action.senderId != pending.toPlayerId) {
+        return;
+      }
+    }
+    if (action.type == NetworkActionType.auctionBid ||
+        action.type == NetworkActionType.auctionPass) {
+      if (_auction == null || _auction!.currentBidderId != action.senderId) {
+        return;
+      }
+    }
+    if (action.type == NetworkActionType.auctionBid) {
+      final amount = (action.payload['amount'] as num?)?.toInt() ?? 0;
+      if (amount <= _auction!.highestBid) return;
+    }
+    if (action.type == NetworkActionType.trade) {
+      try {
+        final offer = TradeOffer.fromJson(action.payload);
+        if (offer.fromPlayerId != action.senderId) return;
+      } catch (_) {
+        return;
+      }
+    }
 
     _applyingRemote = true;
     try {
       switch (action.type) {
         case NetworkActionType.roll:
-          if (state.activePlayer.id == action.senderId) rollDice();
+          rollDice();
         case NetworkActionType.buy:
-          if (state.activePlayer.id == action.senderId) acceptBuy();
+          acceptBuy();
         case NetworkActionType.declineBuy:
-          if (state.activePlayer.id == action.senderId) declineBuy();
+          declineBuy();
         case NetworkActionType.endTurn:
-          if (state.activePlayer.id == action.senderId) endTurn();
+          endTurn();
         case NetworkActionType.dismissNotice:
-          if (state.activePlayer.id == action.senderId) dismissNotice();
+          dismissNotice();
         case NetworkActionType.payJailFine:
-          if (state.activePlayer.id == action.senderId) payJailFine();
+          payJailFine();
         case NetworkActionType.auctionBid:
-          if (_auction?.currentBidderId == action.senderId) {
-            auctionBid((action.payload['amount'] as num?)?.toInt() ?? 0);
-          }
+          auctionBid((action.payload['amount'] as num?)?.toInt() ?? 0);
         case NetworkActionType.auctionPass:
-          if (_auction?.currentBidderId == action.senderId) auctionPass();
+          auctionPass();
         case NetworkActionType.tradeAccept:
           acceptTrade();
         case NetworkActionType.tradeDecline:
@@ -877,11 +1206,39 @@ class GameController extends StateNotifier<GameState>
           proposeTrade(TradeOffer.fromJson(action.payload));
         case NetworkActionType.buildHouse:
           buildHouse((action.payload['cellIndex'] as num?)?.toInt() ?? -1);
+        case NetworkActionType.sellHouse:
+          sellNode((action.payload['cellIndex'] as num?)?.toInt() ?? -1);
+        case NetworkActionType.mortgage:
+          pledgeProperty((action.payload['cellIndex'] as num?)?.toInt() ?? -1);
+        case NetworkActionType.unmortgage:
+          unmortgageProperty(
+            (action.payload['cellIndex'] as num?)?.toInt() ?? -1,
+          );
+        case NetworkActionType.useJailCard:
+          useJailCard();
+        case NetworkActionType.overdraft:
+          drawOverdraft();
+        case NetworkActionType.buyout:
+          buyout((action.payload['cellIndex'] as num?)?.toInt() ?? -1);
+        case NetworkActionType.blackout:
+          blackout((action.payload['cellIndex'] as num?)?.toInt() ?? -1);
+        case NetworkActionType.requestClaim:
+          requestClaim();
+        case NetworkActionType.acceptClaim:
+          acceptClaim((action.payload['cellIndex'] as num?)?.toInt() ?? -1);
+        case NetworkActionType.declineClaim:
+          declineClaim();
         case NetworkActionType.kickToAi:
         case NetworkActionType.ready:
         case NetworkActionType.startGame:
           break;
       }
+    } catch (e, st) {
+      assert(() {
+        // ignore: avoid_print
+        print('remote action rejected/failed: $e\n$st');
+        return true;
+      }());
     } finally {
       _applyingRemote = false;
     }
@@ -891,9 +1248,43 @@ class GameController extends StateNotifier<GameState>
   void _onPresenceSync(List<PresenceMember> members) {
     final onlineIds = members.map((m) => m.playerId).toSet();
     for (final id in onlineIds) {
-      _disconnectTimers.remove(id)?.cancel();
+      final timer = _disconnectTimers.remove(id);
+      timer?.cancel();
+      final roster = state.players.where((p) => p.id == id).firstOrNull;
+      final waitingForThem = state.isWaitingForReconnection &&
+          roster != null &&
+          roster.name == state.disconnectedPlayerName;
+      if (timer != null || waitingForThem || (roster?.isAi ?? false)) {
+        _reclaimHumanSeat(id);
+      }
     }
+    _maybeHandleHostMigration();
     if (isOnline && isHost) {
+      _pokeAi();
+    }
+  }
+
+  void _maybeHandleHostMigration() {
+    if (!isOnline) return;
+    final online = _online;
+    if (online == null) return;
+
+    final newHostId = online.realtime.hostPlayerId;
+    final prevHostId = _lastKnownHostId;
+    if (newHostId == prevHostId) return;
+    _lastKnownHostId = newHostId;
+
+    // Newly elected host immediately freezes board state for all peers.
+    if (isHost &&
+        newHostId == localPlayerId &&
+        prevHostId != null &&
+        prevHostId != newHostId) {
+      state = state.copyWith(
+        log: _append(
+          'HOST MIGRATION → ${state.players.where((p) => p.id == localPlayerId).firstOrNull?.name ?? 'HOST'} assumes authority.',
+        ),
+      );
+      unawaited(_broadcastSync());
       _pokeAi();
     }
   }
@@ -902,13 +1293,64 @@ class GameController extends StateNotifier<GameState>
     PresenceMember left,
     List<PresenceMember> remaining,
   ) {
+    _maybeHandleHostMigration();
     if (!isOnline || !isHost) return;
+
     final id = left.playerId;
+    final rosterIdx = state.players.indexWhere((p) => p.id == id);
+    if (rosterIdx < 0) return;
+    final player = state.players[rosterIdx];
+    if (player.isBankrupt) return;
+
     _disconnectTimers[id]?.cancel();
+    final deadline =
+        DateTime.now().add(disconnectAiGrace).millisecondsSinceEpoch;
+    state = state.copyWith(
+      isWaitingForReconnection: true,
+      disconnectedPlayerName: player.name,
+      reconnectDeadlineMs: deadline,
+      log: _append(
+        '${player.name} SIGNAL LOST — reconnect window ${disconnectAiGrace.inSeconds}s.',
+      ),
+    );
+    unawaited(_broadcastSync());
+
     _disconnectTimers[id] = Timer(disconnectAiGrace, () {
       _disconnectTimers.remove(id);
       _convertDisconnectedToAi(id);
     });
+  }
+
+  void _reclaimHumanSeat(String playerId) {
+    if (!isHost) return;
+    final idx = state.players.indexWhere((p) => p.id == playerId);
+    if (idx < 0) return;
+    final player = state.players[idx];
+    if (player.isBankrupt) return;
+
+    final players = [...state.players];
+    var changed = false;
+    if (player.isAi) {
+      players[idx] = player.copyWith(isAi: false);
+      changed = true;
+    }
+
+    final clearingWait = state.isWaitingForReconnection &&
+        state.disconnectedPlayerName == player.name;
+
+    if (!changed && !clearingWait) return;
+
+    state = state.copyWith(
+      players: players,
+      isWaitingForReconnection:
+          clearingWait ? false : state.isWaitingForReconnection,
+      disconnectedPlayerName:
+          clearingWait ? null : state.disconnectedPlayerName,
+      reconnectDeadlineMs:
+          clearingWait ? null : state.reconnectDeadlineMs,
+      log: _append('${player.name} SIGNAL RESTORED — control reclaimed.'),
+    );
+    unawaited(_broadcastSync());
   }
 
   void _convertDisconnectedToAi(String playerId) {
@@ -916,7 +1358,7 @@ class GameController extends StateNotifier<GameState>
     final idx = state.players.indexWhere((p) => p.id == playerId);
     if (idx < 0) return;
     final player = state.players[idx];
-    if (player.isAi || player.isBankrupt) return;
+    if (player.isBankrupt) return;
 
     final bot = player.copyWith(
       isAi: true,
@@ -924,10 +1366,16 @@ class GameController extends StateNotifier<GameState>
     );
     final players = [...state.players];
     players[idx] = bot;
+    final clearBanner = state.disconnectedPlayerName == player.name;
     state = state.copyWith(
       players: players,
+      isWaitingForReconnection:
+          clearBanner ? false : state.isWaitingForReconnection,
+      disconnectedPlayerName:
+          clearBanner ? null : state.disconnectedPlayerName,
+      reconnectDeadlineMs: clearBanner ? null : state.reconnectDeadlineMs,
       log: _append(
-        '${player.name} SIGNAL LOST >15s → AI TAKEOVER (${bot.aiProfile?.name ?? 'bot'}).',
+        '${player.name} SIGNAL LOST >${disconnectAiGrace.inSeconds}s → AI TAKEOVER (${bot.aiProfile?.name ?? 'bot'}).',
       ),
     );
     unawaited(_broadcastSync());
@@ -999,6 +1447,14 @@ class GameController extends StateNotifier<GameState>
   }
 
   void _resolveCell() {
+    if (state.nextRentMultiplier != 1 || state.nextUtilityFlatTen) {
+      final cell = state.cellAt(_active.position);
+      final keepRail = cell is RailroadCell;
+      final keepUtil = cell is UtilityCell;
+      if (!keepRail && !keepUtil) {
+        state = state.copyWith(nextRentMultiplier: 1, nextUtilityFlatTen: false);
+      }
+    }
     final cell = state.cellAt(_active.position);
 
     switch (cell) {
@@ -1019,7 +1475,7 @@ class GameController extends StateNotifier<GameState>
         state = state.copyWith(
           log: _append('${_active.name} на клітинці «$name».'),
         );
-        _finishCellAction();
+        _finishCellAction(autoPass: true);
       case SpecialKind.goToJail:
         _speak(_active, AiDialogueEvent.goToJail);
         _sendToJail(
@@ -1038,20 +1494,35 @@ class GameController extends StateNotifier<GameState>
     final card = _decks.draw(kind);
     final result = CardResolver.apply(state, card);
     state = result.state;
+    if (result.salaryGranted > 0) {
+      _addSalaryToActive(result.salaryGranted);
+      if (state.isGameOver || _active.isBankrupt) return;
+    }
+    if (card.effect == CardEffectType.eminentDomain) {
+      _beginClaim(consumesBuyout: false);
+      _pokeAi();
+      return;
+    }
     if (result.wentToJail) {
       _speak(_active, AiDialogueEvent.goToJail);
       return;
     }
     if (result.reresolveCell) {
-      // Landed elsewhere — resolve that cell after acknowledging card.
-      // Keep card notice; on dismiss we'll re-resolve.
       state = state.copyWith(
-        log: _append('Card move pending cell resolve at ${state.activePlayer.position}.'),
+        log: _append(
+          'Card move pending cell resolve at ${state.activePlayer.position}.',
+        ),
       );
     }
   }
 
   void _resolveOwnable(BoardCell cell) {
+    final rentMultiplier = cell is RailroadCell ? state.nextRentMultiplier : 1;
+    final utilityFlatTen = cell is UtilityCell && state.nextUtilityFlatTen;
+    if (state.nextRentMultiplier != 1 || state.nextUtilityFlatTen) {
+      state = state.copyWith(nextRentMultiplier: 1, nextUtilityFlatTen: false);
+    }
+
     final ownerId = cell.ownerIdOrNull;
     if (ownerId == null) {
       final price = cell.priceOrNull!;
@@ -1071,7 +1542,7 @@ class GameController extends StateNotifier<GameState>
     }
 
     if (ownerId == _active.id || cell.isMortgagedOrFalse) {
-      _finishCellAction();
+      _finishCellAction(autoPass: true);
       return;
     }
 
@@ -1079,9 +1550,12 @@ class GameController extends StateNotifier<GameState>
       cell: cell,
       board: state.board,
       diceTotal: state.lastRoll?.total ?? 0,
+      suppressed: Nightfall.cellSuppressed(state, cell.index),
+      rentMultiplier: rentMultiplier,
+      utilityFlatTen: utilityFlatTen,
     );
     if (rent <= 0) {
-      _finishCellAction();
+      _finishCellAction(autoPass: true);
       return;
     }
 
@@ -1226,11 +1700,14 @@ class GameController extends StateNotifier<GameState>
     );
   }
 
-  void _finishCellAction() {
+  void _finishCellAction({bool autoPass = false}) {
     state = state.copyWith(
       phase: TurnPhase.canEndTurn,
       pendingAction: const PendingAction.none(),
     );
+    if (autoPass && !_active.isAi && !state.isGameOver) {
+      endTurn();
+    }
   }
 
   void _clearPendingAndContinue() {
@@ -1367,10 +1844,191 @@ class GameController extends StateNotifier<GameState>
     await _storage.save(state: state, decks: _decks);
   }
 
+  void _addSalaryToActive(int amount) {
+    if (amount <= 0) return;
+    final paid = _active.copyWith(balance: _active.balance + amount);
+    state = state.copyWith(
+      players: _replacePlayer(paid),
+      log: _append(
+        '${paid.name} collects ${GameRules.credits(amount)} at Cycle Reset.',
+      ),
+    );
+    _skimOverdraftOnActive();
+  }
+
+  void _skimOverdraftOnActive() {
+    var player = _active;
+    if (player.overdraftInstallmentsLeft <= 0 || player.overdraftRemaining <= 0) {
+      return;
+    }
+    final left = player.overdraftInstallmentsLeft;
+    final due = left <= 1 ? player.overdraftRemaining : player.overdraftRemaining ~/ left;
+    if (player.balance >= due) {
+      player = player.copyWith(
+        balance: player.balance - due,
+        overdraftRemaining: player.overdraftRemaining - due,
+        overdraftInstallmentsLeft: left - 1,
+      );
+      state = state.copyWith(
+        players: _replacePlayer(player),
+        log: _append(
+          '${player.name} pays the syndicate ${GameRules.credits(due)}.',
+        ),
+      );
+      return;
+    }
+    if (left > 1) {
+      final paid = player.balance;
+      player = player.copyWith(
+        balance: 0,
+        overdraftRemaining: player.overdraftRemaining - paid,
+        overdraftInstallmentsLeft: 1,
+      );
+      state = state.copyWith(
+        players: _replacePlayer(player),
+        log: _append(
+          '${player.name} puts ${GameRules.credits(paid)} toward the syndicate. '
+          'The balance rolls to the next reset.',
+        ),
+      );
+      return;
+    }
+    final paid = player.balance;
+    player = player.copyWith(
+      balance: 0,
+      overdraftRemaining: player.overdraftRemaining - paid,
+      overdraftInstallmentsLeft: 0,
+    );
+    state = state.copyWith(players: _replacePlayer(player));
+    final seized = _seizeUnimprovedAsset(player.id);
+    if (seized != null) {
+      final cleared = state.players
+          .firstWhere((p) => p.id == player.id)
+          .copyWith(overdraftRemaining: 0);
+      state = state.copyWith(
+        players: _replacePlayer(cleared),
+        log: _append(
+          'Syndicate seizes «$seized» and clears ${player.name}\'s debt.',
+        ),
+      );
+      return;
+    }
+    _declareBankruptcy(
+      state.players.firstWhere((p) => p.id == player.id),
+      creditorId: null,
+    );
+  }
+
+  String? _seizeUnimprovedAsset(String playerId) {
+    final player = state.players.firstWhere((p) => p.id == playerId);
+    BoardCell? best;
+    var bestScore = -1;
+    for (final index in player.propertyIndexes) {
+      final cell = state.cellAt(index);
+      if (cell is PropertyCell && cell.houses > 0) continue;
+      if (!cell.isOwnable) continue;
+      var score = cell.priceOrNull ?? 0;
+      if (cell is PropertyCell) {
+        final owned = state.board.whereType<PropertyCell>().where(
+              (c) => c.colorGroup == cell.colorGroup && c.ownerId == playerId,
+            );
+        score += owned.length * 1000;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = cell;
+      }
+    }
+    if (best == null) return null;
+    final board = [...state.board];
+    board[best.index] = switch (best) {
+      PropertyCell c => c.copyWith(ownerId: null, isMortgaged: false, houses: 0),
+      RailroadCell c => c.copyWith(ownerId: null, isMortgaged: false),
+      UtilityCell c => c.copyWith(ownerId: null, isMortgaged: false),
+      _ => best,
+    };
+    final stripped = player.copyWith(
+      propertyIndexes: [
+        for (final i in player.propertyIndexes)
+          if (i != best.index) i,
+      ],
+    );
+    state = state.copyWith(board: board, players: _replacePlayer(stripped));
+    return best.name;
+  }
+
+  void _beginClaim({required bool consumesBuyout}) {
+    if (consumesBuyout && _active.buyoutUsed) {
+      state = state.copyWith(
+        log: _append('${_active.name} has already used eminent domain.'),
+      );
+      return;
+    }
+    final targets = Nightfall.claimTargets(state, _active);
+    if (targets.isEmpty) {
+      if (state.pendingAction is PendingCardNotice) return;
+      state = state.copyWith(
+        log: _append('${_active.name} has no exposed third street to claim.'),
+      );
+      return;
+    }
+    state = state.copyWith(
+      phase: TurnPhase.cellAction,
+      pendingAction: PendingAction.claimOffer(
+        cellIndexes: targets,
+        consumesBuyout: consumesBuyout,
+      ),
+      log: _append('${_active.name} opens a district claim.'),
+    );
+  }
+
+  bool _executeBuyout(int cellIndex, {required bool consumeCharge}) {
+    final buyer = _active;
+    final cell = state.cellAt(cellIndex);
+    if (cell is! PropertyCell) return false;
+    if (!Nightfall.claimTargets(state, buyer).contains(cellIndex)) return false;
+    final price = Nightfall.buyoutPrice(cell.price);
+    if (!RulesEngine.canAfford(buyer, price)) return false;
+    final owner = state.players.firstWhere((p) => p.id == cell.ownerId);
+    final paidBuyer = buyer.copyWith(
+      balance: buyer.balance - price,
+      buyoutUsed: consumeCharge ? true : buyer.buyoutUsed,
+      propertyIndexes: [...buyer.propertyIndexes, cellIndex],
+    );
+    final paidOwner = owner.copyWith(
+      balance: owner.balance + price,
+      propertyIndexes: [
+        for (final i in owner.propertyIndexes)
+          if (i != cellIndex) i,
+      ],
+    );
+    final board = [...state.board];
+    board[cellIndex] = cell.copyWith(ownerId: buyer.id);
+    state = state.copyWith(
+      board: board,
+      players: _replacePlayers([paidBuyer, paidOwner]),
+      log: _append(
+        '${buyer.name} claims «${cell.name}» from ${owner.name} '
+        'for ${GameRules.credits(price)}.',
+      ),
+    );
+    _hostSync();
+    return true;
+  }
+
   void _declareBankruptcy(Player loser, {required String? creditorId}) {
     var board = [...state.board];
+    var houses = state.housesInBank;
+    var hotels = state.hotelsInBank;
     for (final idx in loser.propertyIndexes) {
       final cell = board[idx];
+      if (cell is PropertyCell) {
+        if (cell.houses >= 5) {
+          hotels = (hotels + 1).clamp(0, GameRules.hotelsInSupply);
+        } else {
+          houses = (houses + cell.houses).clamp(0, GameRules.housesInSupply);
+        }
+      }
       board[idx] = switch (cell) {
         PropertyCell c => c.copyWith(
             ownerId: creditorId,
@@ -1391,13 +2049,14 @@ class GameController extends StateNotifier<GameState>
 
     var players = [...state.players];
     final loserIndex = players.indexWhere((p) => p.id == loser.id);
-    // Re-read balance after possible liquidation.
     final current = players[loserIndex];
     players[loserIndex] = current.copyWith(
       isBankrupt: true,
       balance: 0,
       propertyIndexes: const [],
       inJail: false,
+      overdraftRemaining: 0,
+      overdraftInstallmentsLeft: 0,
     );
 
     if (creditorId != null) {
@@ -1413,6 +2072,7 @@ class GameController extends StateNotifier<GameState>
     }
 
     final living = players.where((p) => !p.isBankrupt).toList();
+    final count = state.bankruptcyCount + 1;
     soundService.play(Sfx.bankrupt);
     for (final p in players) {
       if (!p.isBankrupt && p.isAi) {
@@ -1423,23 +2083,23 @@ class GameController extends StateNotifier<GameState>
     state = state.copyWith(
       board: board,
       players: players,
+      housesInBank: houses,
+      hotelsInBank: hotels,
+      bankruptcyCount: count,
       moveStepsLeft: 0,
-      log: _append('${loser.name} liquidated — BANKRUPT.'),
+      log: _append(
+        '${loser.name} liquidated — BANKRUPT '
+        '($count/${GameRules.bankruptciesToEnd}).',
+      ),
     );
 
     if (living.length <= 1) {
-      final winner = living.isEmpty ? null : living.first;
-      state = state.copyWith(
-        phase: TurnPhase.gameOver,
-        winnerId: winner?.id,
-        pendingAction: winner == null
-            ? const PendingAction.none()
-            : PendingAction.winner(
-                playerId: winner.id,
-                playerName: winner.name,
-              ),
-        log: winner == null ? state.log : _append('Переможець: ${winner.name}!'),
-      );
+      _crownSoleSurvivor(living);
+      return;
+    }
+
+    if (count >= GameRules.bankruptciesToEnd) {
+      _finishByNetWorth('Second bankruptcy. Net worth closes the session.');
       return;
     }
 
@@ -1451,25 +2111,119 @@ class GameController extends StateNotifier<GameState>
     _advanceToNextPlayer();
   }
 
+  void _crownSoleSurvivor(List<Player> living) {
+    final winner = living.isEmpty ? null : living.first;
+    final worth = winner == null ? 0 : Nightfall.netWorth(state, winner);
+    state = state.copyWith(
+      phase: TurnPhase.gameOver,
+      winnerId: winner?.id,
+      pendingAction: winner == null
+          ? const PendingAction.none()
+          : PendingAction.winner(
+              playerId: winner.id,
+              playerName: winner.name,
+              netWorth: worth,
+            ),
+      log: winner == null
+          ? state.log
+          : _append(
+              'Переможець: ${winner.name} · NET ${GameRules.credits(worth)}.',
+            ),
+    );
+  }
+
+  void _finishByNetWorth(String reason) {
+    final ranked = [...state.livingPlayers]..sort((a, b) {
+        final byWorth = Nightfall.netWorth(state, b)
+            .compareTo(Nightfall.netWorth(state, a));
+        if (byWorth != 0) return byWorth;
+        return b.balance.compareTo(a.balance);
+      });
+    if (ranked.isEmpty) {
+      state = state.copyWith(
+        phase: TurnPhase.gameOver,
+        pendingAction: const PendingAction.none(),
+        log: _append(reason),
+      );
+      return;
+    }
+    final winner = ranked.first;
+    final worth = Nightfall.netWorth(state, winner);
+    var log = _append(reason);
+    for (final p in ranked) {
+      log = [
+        ...log,
+        '${p.name} NET ${GameRules.credits(Nightfall.netWorth(state, p))}.',
+      ];
+    }
+    state = state.copyWith(
+      phase: TurnPhase.gameOver,
+      winnerId: winner.id,
+      pendingAction: PendingAction.winner(
+        playerId: winner.id,
+        playerName: winner.name,
+        netWorth: worth,
+      ),
+      log: [
+        ...log,
+        'Переможець: ${winner.name} · NET ${GameRules.credits(worth)}.',
+      ],
+    );
+  }
+
   void _advanceToNextPlayer() {
     if (state.isGameOver) return;
 
     final n = state.players.length;
-    var idx = state.activePlayerIndex;
+    final previous = state.activePlayerIndex;
+    var idx = previous;
     for (var i = 0; i < n; i++) {
       idx = (idx + 1) % n;
       if (!state.players[idx].isBankrupt) break;
     }
 
+    var round = state.round;
+    var groups = state.blackoutGroupsThisRound;
+    if (idx < previous) {
+      round += 1;
+      groups = const [];
+    }
+    if (round > GameRules.blitzRoundLimit) {
+      _finishByNetWorth(
+        'Round ${GameRules.blitzRoundLimit} closed. Net worth decides.',
+      );
+      return;
+    }
+
+    final incomingId = state.players[idx].id;
+    final keptCells = <int>[];
+    final keptBy = <String>[];
+    for (var i = 0; i < state.suppressedCells.length; i++) {
+      final hacker = i < state.suppressedBy.length ? state.suppressedBy[i] : '';
+      if (hacker == incomingId) continue;
+      keptCells.add(state.suppressedCells[i]);
+      keptBy.add(hacker);
+    }
+    final players = _replacePlayer(
+      state.players[idx].copyWith(blackoutUsedThisTurn: false),
+    );
+
     state = state.copyWith(
+      players: players,
       activePlayerIndex: idx,
+      round: round,
+      blackoutGroupsThisRound: groups,
+      suppressedCells: keptCells,
+      suppressedBy: keptBy,
       phase: TurnPhase.waitingForRoll,
       consecutiveDoubles: 0,
       lastRoll: null,
       moveFromIndex: null,
       moveStepsLeft: 0,
       pendingAction: const PendingAction.none(),
-      log: _append('Operative turn: ${state.players[idx].name}.'),
+      log: _append(
+        'ROUND $round/${GameRules.blitzRoundLimit} · ${players[idx].name}.',
+      ),
     );
     unawaited(_autosaveIfNeeded());
     _pokeAi();

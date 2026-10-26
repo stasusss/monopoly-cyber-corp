@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../core/constants/game_rules.dart';
 import 'cell.dart';
 import 'dice.dart';
 import 'pending_action.dart';
@@ -53,6 +54,37 @@ abstract class GameState with _$GameState {
     /// Last AI banter line for CyberDialogueBubble.
     String? aiDialogue,
     String? aiDialogueSpeakerId,
+
+    /// Online: an operative left presence and grace timer is running.
+    @Default(false) bool isWaitingForReconnection,
+    String? disconnectedPlayerName,
+
+    /// Epoch ms when [disconnectAiGrace] expires (host-authored, synced).
+    int? reconnectDeadlineMs,
+
+    /// Table round, 1-based. A round completes when the turn wraps to the
+    /// first seat. Blitz ends as round [GameRules.blitzRoundLimit] + 1 starts.
+    @Default(1) int round,
+
+    @Default(0) int bankruptcyCount,
+    @Default(GameRules.housesInSupply) int housesInBank,
+    @Default(GameRules.hotelsInSupply) int hotelsInBank,
+
+    /// Cell indexes whose rent is calculated one tier lower.
+    @Default([]) List<int> suppressedCells,
+
+    /// Hacker id aligned with [suppressedCells]. Cleared when that operative's
+    /// next turn starts.
+    @Default([]) List<String> suppressedBy,
+
+    /// [ColorGroup.name] values already blacked out this round.
+    @Default([]) List<String> blackoutGroupsThisRound,
+
+    /// Next rent resolution is multiplied (Maglev breach = 2). Cleared after use.
+    @Default(1) int nextRentMultiplier,
+
+    /// Next utility bill is 10× dice regardless of how many grids the owner holds.
+    @Default(false) bool nextUtilityFlatTen,
   }) = _GameState;
 
   factory GameState.fromJson(Map<String, dynamic> json) =>

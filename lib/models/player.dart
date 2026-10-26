@@ -24,6 +24,12 @@ extension TokenColorX on TokenColor {
         TokenColor.yellow => const Color(0xFFFDD835),
       };
 
+  /// Glyph color that stays readable on the token fill.
+  Color get ink => switch (this) {
+        TokenColor.yellow || TokenColor.green => const Color(0xFF0A0C10),
+        _ => const Color(0xFFFFFFFF),
+      };
+
   String get labelUk => switch (this) {
         TokenColor.red => 'Червоний',
         TokenColor.blue => 'Синій',
@@ -49,6 +55,15 @@ abstract class Player with _$Player {
     @Default(false) bool isAi,
     AiProfile? aiProfile,
     @Default(0) int getOutOfJailCards,
+
+    /// Deck ids (`dataBreach` / `corpoBounty`) for held ICE nullifiers, oldest first.
+    @Default([]) List<String> jailCardSources,
+
+    @Default(false) bool overdraftUsed,
+    @Default(0) int overdraftRemaining,
+    @Default(0) int overdraftInstallmentsLeft,
+    @Default(false) bool buyoutUsed,
+    @Default(false) bool blackoutUsedThisTurn,
   }) = _Player;
 
   factory Player.fromJson(Map<String, dynamic> json) => _$PlayerFromJson(json);

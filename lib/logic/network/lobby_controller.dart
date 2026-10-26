@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../../models/player.dart';
 import 'network_action.dart';
 import 'network_providers.dart';
+import 'online_identity_store.dart';
 import 'room_manager.dart';
 import 'supabase_realtime_service.dart';
 
@@ -89,8 +90,9 @@ class LobbyState {
 }
 
 class LobbyController extends StateNotifier<LobbyState> {
-  LobbyController(this._realtime)
-      : super(
+  LobbyController(this._realtime, {OnlineIdentityStore? identityStore})
+      : _identity = identityStore ?? OnlineIdentityStore(),
+        super(
           LobbyState(deepLinkRoom: RoomManager.roomCodeFromUri()),
         ) {
     _actionSub = _realtime.onActionReceived.listen(_onAction);
@@ -105,6 +107,7 @@ class LobbyController extends StateNotifier<LobbyState> {
   static const minPlayers = 2;
 
   final SupabaseRealtimeService _realtime;
+  final OnlineIdentityStore _identity;
   StreamSubscription<NetworkAction>? _actionSub;
   StreamSubscription<Map<String, dynamic>>? _syncSub;
   StreamSubscription<List<PresenceMember>>? _presenceSub;
@@ -150,7 +153,10 @@ class LobbyController extends StateNotifier<LobbyState> {
       clearError: true,
     );
 
-    final playerId = state.localPlayerId ?? _uuid.v4();
+    final saved = await _identity.loadForRoom(code);
+    final playerId = saved?.playerId ?? state.localPlayerId ?? _uuid.v4();
+    final joinedAtMs =
+        saved?.joinedAtMs ?? DateTime.now().millisecondsSinceEpoch;
     final player = Player(
       id: playerId,
       name: state.nickname,
@@ -158,7 +164,16 @@ class LobbyController extends StateNotifier<LobbyState> {
     );
 
     try {
-      await _realtime.connect(roomId: code, player: player);
+      await _realtime.connect(
+        roomId: code,
+        player: player,
+        joinedAtMs: joinedAtMs,
+      );
+      await _identity.save(
+        roomCode: code,
+        playerId: playerId,
+        joinedAtMs: joinedAtMs,
+      );
       // Soft cap: still enter room; UI warns if overfull.
       state = state.copyWith(
         phase: LobbyPhase.room,
@@ -221,6 +236,7 @@ class LobbyController extends StateNotifier<LobbyState> {
 
   Future<void> leaveRoom() async {
     await _realtime.disconnect();
+    await _identity.clear();
     state = LobbyState(
       nickname: state.nickname,
       tokenColor: state.tokenColor,

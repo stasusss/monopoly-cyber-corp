@@ -40,4 +40,26 @@ abstract final class GameRules {
 
   /// Full color-set monopoly: base rent × this multiplier (no houses).
   static const int monopolyRentMultiplier = 2;
+
+  /// Blitz session ends when this round would begin (rounds played: 1..limit).
+  static const int blitzRoundLimit = 30;
+
+  /// Second bankruptcy ends a 4-player table even if two operatives remain.
+  static const int bankruptciesToEnd = 2;
+
+  static const int housesInSupply = 32;
+  static const int hotelsInSupply = 12;
+
+  /// Opening bid and minimum raise.
+  static const int auctionBidStep = 50;
+
+  static const int overdraftMax = 300;
+
+  /// AI stops at 3 data nodes while any opponent still holds more than this.
+  static const int liquidCashThreshold = 400;
+
+  static const int developStopAtHouses = 3;
+
+  /// Forced district claim price, percent of list price.
+  static const int buyoutPercent = 120;
 }

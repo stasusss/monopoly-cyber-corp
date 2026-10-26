@@ -34,6 +34,14 @@ mixin _$Player {
   AiProfile? get aiProfile => throw _privateConstructorUsedError;
   int get getOutOfJailCards => throw _privateConstructorUsedError;
 
+  /// Deck ids (`dataBreach` / `corpoBounty`) for held ICE nullifiers, oldest first.
+  List<String> get jailCardSources => throw _privateConstructorUsedError;
+  bool get overdraftUsed => throw _privateConstructorUsedError;
+  int get overdraftRemaining => throw _privateConstructorUsedError;
+  int get overdraftInstallmentsLeft => throw _privateConstructorUsedError;
+  bool get buyoutUsed => throw _privateConstructorUsedError;
+  bool get blackoutUsedThisTurn => throw _privateConstructorUsedError;
+
   /// Serializes this Player to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -61,6 +69,12 @@ abstract class $PlayerCopyWith<$Res> {
     bool isAi,
     AiProfile? aiProfile,
     int getOutOfJailCards,
+    List<String> jailCardSources,
+    bool overdraftUsed,
+    int overdraftRemaining,
+    int overdraftInstallmentsLeft,
+    bool buyoutUsed,
+    bool blackoutUsedThisTurn,
   });
 }
 
@@ -91,6 +105,12 @@ class _$PlayerCopyWithImpl<$Res, $Val extends Player>
     Object? isAi = null,
     Object? aiProfile = freezed,
     Object? getOutOfJailCards = null,
+    Object? jailCardSources = null,
+    Object? overdraftUsed = null,
+    Object? overdraftRemaining = null,
+    Object? overdraftInstallmentsLeft = null,
+    Object? buyoutUsed = null,
+    Object? blackoutUsedThisTurn = null,
   }) {
     return _then(
       _value.copyWith(
@@ -142,6 +162,30 @@ class _$PlayerCopyWithImpl<$Res, $Val extends Player>
                 ? _value.getOutOfJailCards
                 : getOutOfJailCards // ignore: cast_nullable_to_non_nullable
                       as int,
+            jailCardSources: null == jailCardSources
+                ? _value.jailCardSources
+                : jailCardSources // ignore: cast_nullable_to_non_nullable
+                      as List<String>,
+            overdraftUsed: null == overdraftUsed
+                ? _value.overdraftUsed
+                : overdraftUsed // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            overdraftRemaining: null == overdraftRemaining
+                ? _value.overdraftRemaining
+                : overdraftRemaining // ignore: cast_nullable_to_non_nullable
+                      as int,
+            overdraftInstallmentsLeft: null == overdraftInstallmentsLeft
+                ? _value.overdraftInstallmentsLeft
+                : overdraftInstallmentsLeft // ignore: cast_nullable_to_non_nullable
+                      as int,
+            buyoutUsed: null == buyoutUsed
+                ? _value.buyoutUsed
+                : buyoutUsed // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            blackoutUsedThisTurn: null == blackoutUsedThisTurn
+                ? _value.blackoutUsedThisTurn
+                : blackoutUsedThisTurn // ignore: cast_nullable_to_non_nullable
+                      as bool,
           )
           as $Val,
     );
@@ -169,6 +213,12 @@ abstract class _$$PlayerImplCopyWith<$Res> implements $PlayerCopyWith<$Res> {
     bool isAi,
     AiProfile? aiProfile,
     int getOutOfJailCards,
+    List<String> jailCardSources,
+    bool overdraftUsed,
+    int overdraftRemaining,
+    int overdraftInstallmentsLeft,
+    bool buyoutUsed,
+    bool blackoutUsedThisTurn,
   });
 }
 
@@ -198,6 +248,12 @@ class __$$PlayerImplCopyWithImpl<$Res>
     Object? isAi = null,
     Object? aiProfile = freezed,
     Object? getOutOfJailCards = null,
+    Object? jailCardSources = null,
+    Object? overdraftUsed = null,
+    Object? overdraftRemaining = null,
+    Object? overdraftInstallmentsLeft = null,
+    Object? buyoutUsed = null,
+    Object? blackoutUsedThisTurn = null,
   }) {
     return _then(
       _$PlayerImpl(
@@ -249,6 +305,30 @@ class __$$PlayerImplCopyWithImpl<$Res>
             ? _value.getOutOfJailCards
             : getOutOfJailCards // ignore: cast_nullable_to_non_nullable
                   as int,
+        jailCardSources: null == jailCardSources
+            ? _value._jailCardSources
+            : jailCardSources // ignore: cast_nullable_to_non_nullable
+                  as List<String>,
+        overdraftUsed: null == overdraftUsed
+            ? _value.overdraftUsed
+            : overdraftUsed // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        overdraftRemaining: null == overdraftRemaining
+            ? _value.overdraftRemaining
+            : overdraftRemaining // ignore: cast_nullable_to_non_nullable
+                  as int,
+        overdraftInstallmentsLeft: null == overdraftInstallmentsLeft
+            ? _value.overdraftInstallmentsLeft
+            : overdraftInstallmentsLeft // ignore: cast_nullable_to_non_nullable
+                  as int,
+        buyoutUsed: null == buyoutUsed
+            ? _value.buyoutUsed
+            : buyoutUsed // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        blackoutUsedThisTurn: null == blackoutUsedThisTurn
+            ? _value.blackoutUsedThisTurn
+            : blackoutUsedThisTurn // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -270,7 +350,14 @@ class _$PlayerImpl extends _Player {
     this.isAi = false,
     this.aiProfile,
     this.getOutOfJailCards = 0,
+    final List<String> jailCardSources = const [],
+    this.overdraftUsed = false,
+    this.overdraftRemaining = 0,
+    this.overdraftInstallmentsLeft = 0,
+    this.buyoutUsed = false,
+    this.blackoutUsedThisTurn = false,
   }) : _propertyIndexes = propertyIndexes,
+       _jailCardSources = jailCardSources,
        super._();
 
   factory _$PlayerImpl.fromJson(Map<String, dynamic> json) =>
@@ -315,9 +402,37 @@ class _$PlayerImpl extends _Player {
   @JsonKey()
   final int getOutOfJailCards;
 
+  /// Deck ids (`dataBreach` / `corpoBounty`) for held ICE nullifiers, oldest first.
+  final List<String> _jailCardSources;
+
+  /// Deck ids (`dataBreach` / `corpoBounty`) for held ICE nullifiers, oldest first.
+  @override
+  @JsonKey()
+  List<String> get jailCardSources {
+    if (_jailCardSources is EqualUnmodifiableListView) return _jailCardSources;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_jailCardSources);
+  }
+
+  @override
+  @JsonKey()
+  final bool overdraftUsed;
+  @override
+  @JsonKey()
+  final int overdraftRemaining;
+  @override
+  @JsonKey()
+  final int overdraftInstallmentsLeft;
+  @override
+  @JsonKey()
+  final bool buyoutUsed;
+  @override
+  @JsonKey()
+  final bool blackoutUsedThisTurn;
+
   @override
   String toString() {
-    return 'Player(id: $id, name: $name, tokenColor: $tokenColor, balance: $balance, position: $position, inJail: $inJail, jailTurns: $jailTurns, propertyIndexes: $propertyIndexes, isBankrupt: $isBankrupt, isAi: $isAi, aiProfile: $aiProfile, getOutOfJailCards: $getOutOfJailCards)';
+    return 'Player(id: $id, name: $name, tokenColor: $tokenColor, balance: $balance, position: $position, inJail: $inJail, jailTurns: $jailTurns, propertyIndexes: $propertyIndexes, isBankrupt: $isBankrupt, isAi: $isAi, aiProfile: $aiProfile, getOutOfJailCards: $getOutOfJailCards, jailCardSources: $jailCardSources, overdraftUsed: $overdraftUsed, overdraftRemaining: $overdraftRemaining, overdraftInstallmentsLeft: $overdraftInstallmentsLeft, buyoutUsed: $buyoutUsed, blackoutUsedThisTurn: $blackoutUsedThisTurn)';
   }
 
   @override
@@ -345,7 +460,24 @@ class _$PlayerImpl extends _Player {
             (identical(other.aiProfile, aiProfile) ||
                 other.aiProfile == aiProfile) &&
             (identical(other.getOutOfJailCards, getOutOfJailCards) ||
-                other.getOutOfJailCards == getOutOfJailCards));
+                other.getOutOfJailCards == getOutOfJailCards) &&
+            const DeepCollectionEquality().equals(
+              other._jailCardSources,
+              _jailCardSources,
+            ) &&
+            (identical(other.overdraftUsed, overdraftUsed) ||
+                other.overdraftUsed == overdraftUsed) &&
+            (identical(other.overdraftRemaining, overdraftRemaining) ||
+                other.overdraftRemaining == overdraftRemaining) &&
+            (identical(
+                  other.overdraftInstallmentsLeft,
+                  overdraftInstallmentsLeft,
+                ) ||
+                other.overdraftInstallmentsLeft == overdraftInstallmentsLeft) &&
+            (identical(other.buyoutUsed, buyoutUsed) ||
+                other.buyoutUsed == buyoutUsed) &&
+            (identical(other.blackoutUsedThisTurn, blackoutUsedThisTurn) ||
+                other.blackoutUsedThisTurn == blackoutUsedThisTurn));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -364,6 +496,12 @@ class _$PlayerImpl extends _Player {
     isAi,
     aiProfile,
     getOutOfJailCards,
+    const DeepCollectionEquality().hash(_jailCardSources),
+    overdraftUsed,
+    overdraftRemaining,
+    overdraftInstallmentsLeft,
+    buyoutUsed,
+    blackoutUsedThisTurn,
   );
 
   /// Create a copy of Player
@@ -394,6 +532,12 @@ abstract class _Player extends Player {
     final bool isAi,
     final AiProfile? aiProfile,
     final int getOutOfJailCards,
+    final List<String> jailCardSources,
+    final bool overdraftUsed,
+    final int overdraftRemaining,
+    final int overdraftInstallmentsLeft,
+    final bool buyoutUsed,
+    final bool blackoutUsedThisTurn,
   }) = _$PlayerImpl;
   const _Player._() : super._();
 
@@ -423,6 +567,20 @@ abstract class _Player extends Player {
   AiProfile? get aiProfile;
   @override
   int get getOutOfJailCards;
+
+  /// Deck ids (`dataBreach` / `corpoBounty`) for held ICE nullifiers, oldest first.
+  @override
+  List<String> get jailCardSources;
+  @override
+  bool get overdraftUsed;
+  @override
+  int get overdraftRemaining;
+  @override
+  int get overdraftInstallmentsLeft;
+  @override
+  bool get buyoutUsed;
+  @override
+  bool get blackoutUsedThisTurn;
 
   /// Create a copy of Player
   /// with the given fields replaced by the non-null parameter values.

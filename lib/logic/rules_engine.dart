@@ -33,6 +33,9 @@ abstract final class RulesEngine {
     required BoardCell cell,
     required List<BoardCell> board,
     required int diceTotal,
+    bool suppressed = false,
+    int rentMultiplier = 1,
+    bool utilityFlatTen = false,
   }) {
     if (cell.isMortgagedOrFalse) return 0;
     final ownerId = cell.ownerIdOrNull;
@@ -49,7 +52,7 @@ abstract final class RulesEngine {
             ? 0
             : _propertyRent(
                 rents: rents,
-                houses: houses,
+                houses: suppressed ? (houses - 1).clamp(0, 5) : houses,
                 hasMonopoly: ownsFullColorGroup(
                   board: board,
                   ownerId: ownerId,
@@ -59,13 +62,16 @@ abstract final class RulesEngine {
       RailroadCell(:final isMortgaged) => isMortgaged
           ? 0
           : GameRules.railroadRents[
-              (countRailroadsOwned(board, ownerId) - 1).clamp(0, 3)],
+                (countRailroadsOwned(board, ownerId) - 1).clamp(0, 3)] *
+              rentMultiplier,
       UtilityCell(:final isMortgaged) => isMortgaged
           ? 0
           : diceTotal *
-              (countUtilitiesOwned(board, ownerId) >= 2
+              (utilityFlatTen
                   ? GameRules.utilityMultiplierTwo
-                  : GameRules.utilityMultiplierOne),
+                  : countUtilitiesOwned(board, ownerId) >= 2
+                      ? GameRules.utilityMultiplierTwo
+                      : GameRules.utilityMultiplierOne),
       _ => 0,
     };
   }
@@ -86,7 +92,7 @@ abstract final class RulesEngine {
   static bool canAfford(Player player, int amount) =>
       !player.isBankrupt && player.balance >= amount;
 
-  /// True when the player cannot cover [amount] (prototype: no mortgaging UI yet).
+  /// True when the player cannot cover [amount] from cash on hand.
   static bool isBankruptAfter(Player player, int amount) =>
       player.balance < amount;
 }

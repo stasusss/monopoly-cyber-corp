@@ -145,6 +145,7 @@ _$PendingWinnerImpl _$$PendingWinnerImplFromJson(Map<String, dynamic> json) =>
     _$PendingWinnerImpl(
       playerId: json['playerId'] as String,
       playerName: json['playerName'] as String,
+      netWorth: (json['netWorth'] as num?)?.toInt() ?? 0,
       $type: json['runtimeType'] as String?,
     );
 
@@ -152,5 +153,24 @@ Map<String, dynamic> _$$PendingWinnerImplToJson(_$PendingWinnerImpl instance) =>
     <String, dynamic>{
       'playerId': instance.playerId,
       'playerName': instance.playerName,
+      'netWorth': instance.netWorth,
       'runtimeType': instance.$type,
     };
+
+_$PendingClaimOfferImpl _$$PendingClaimOfferImplFromJson(
+  Map<String, dynamic> json,
+) => _$PendingClaimOfferImpl(
+  cellIndexes: (json['cellIndexes'] as List<dynamic>)
+      .map((e) => (e as num).toInt())
+      .toList(),
+  consumesBuyout: json['consumesBuyout'] as bool,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$$PendingClaimOfferImplToJson(
+  _$PendingClaimOfferImpl instance,
+) => <String, dynamic>{
+  'cellIndexes': instance.cellIndexes,
+  'consumesBuyout': instance.consumesBuyout,
+  'runtimeType': instance.$type,
+};

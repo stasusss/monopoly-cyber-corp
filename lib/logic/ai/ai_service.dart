@@ -26,6 +26,12 @@ abstract interface class AiGameBridge {
   void aiAuctionPass();
   void aiAcceptTrade();
   void aiDeclineTrade();
+  void aiUseJailCard();
+  void aiDrawOverdraft();
+  void aiBuyout(int cellIndex);
+  void aiBlackout(int cellIndex);
+  void aiAcceptClaim(int cellIndex);
+  void aiDeclineClaim();
 }
 
 /// Orchestrates heuristic bot turns with human-like thinking delays.
@@ -186,6 +192,20 @@ class AiService {
 
     final pending = state.pendingAction;
 
+    if (pending is PendingClaimOffer) {
+      final pick = AiDecisionMatrix.preferredClaim(
+        state,
+        player,
+        pending.cellIndexes,
+      );
+      if (pick != null) {
+        _bridge.aiAcceptClaim(pick);
+      } else {
+        _bridge.aiDeclineClaim();
+      }
+      return true;
+    }
+
     if (pending is PendingBuyOffer) {
       final cell = state.cellAt(pending.cellIndex);
       final buy = AiDecisionMatrix.shouldBuyProperty(
@@ -208,9 +228,23 @@ class AiService {
     }
 
     if (state.phase == TurnPhase.waitingForRoll) {
+      if (AiDecisionMatrix.shouldDrawOverdraft(state: state, ai: player)) {
+        _bridge.aiDrawOverdraft();
+        return true;
+      }
+      if (player.inJail &&
+          AiDecisionMatrix.shouldUseJailCard(state: state, ai: player)) {
+        _bridge.aiUseJailCard();
+        return true;
+      }
       if (player.inJail &&
           AiDecisionMatrix.shouldPayJailFine(state: state, ai: player)) {
         _bridge.aiPayJailFine();
+        return true;
+      }
+      final buyout = AiDecisionMatrix.preferredBuyout(state: state, ai: player);
+      if (buyout != null) {
+        _bridge.aiBuyout(buyout);
         return true;
       }
       _bridge.aiRollDice();
@@ -221,8 +255,25 @@ class AiService {
     }
 
     if (state.phase == TurnPhase.canEndTurn) {
-      _tryBuild(state, player);
-      _bridge.aiEndTurn();
+      final buyout = AiDecisionMatrix.preferredBuyout(
+        state: _bridge.aiState,
+        ai: _bridge.aiState.activePlayer,
+      );
+      if (buyout != null) {
+        _bridge.aiBuyout(buyout);
+      }
+      _tryBuild(_bridge.aiState, _bridge.aiState.activePlayer);
+      final fresh = _bridge.aiState.activePlayer;
+      if (fresh.id == player.id && fresh.isAi) {
+        final blackout = AiDecisionMatrix.preferredBlackout(
+          state: _bridge.aiState,
+          ai: fresh,
+        );
+        if (blackout != null) _bridge.aiBlackout(blackout);
+      }
+      if (_bridge.aiState.activePlayer.id == player.id) {
+        _bridge.aiEndTurn();
+      }
       return true;
     }
 

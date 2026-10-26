@@ -13,6 +13,8 @@ enum CardEffectType {
   payEach,
   nearestRailroad,
   nearestUtility,
+  ledgerLeak,
+  eminentDomain,
 }
 
 class GameCard {
@@ -86,14 +88,14 @@ abstract final class CyberCardCatalog {
           id: 'db_rail',
           deck: CardDeckKind.dataBreach,
           title: 'DATA BREACH',
-          description: 'Hop the nearest Maglev. Pay owner 2× fare if owned.',
+          description: 'Hop the nearest Maglev. Pay the owner double fare if the line is owned.',
           effect: CardEffectType.nearestRailroad,
         ),
         GameCard(
           id: 'db_util',
           deck: CardDeckKind.dataBreach,
           title: 'DATA BREACH',
-          description: 'Force-jack nearest utility. Pay 10× dice if owned.',
+          description: 'Force-jack nearest utility. The bill is 10× the dice if someone owns it.',
           effect: CardEffectType.nearestUtility,
         ),
         GameCard(
@@ -120,12 +122,12 @@ abstract final class CyberCardCatalog {
           amount: 25, // house; hotel uses 100 via engine
         ),
         GameCard(
-          id: 'db_speeding',
+          id: 'db_claim',
           deck: CardDeckKind.dataBreach,
           title: 'DATA BREACH',
-          description: 'Speeding fine — pay ₵15.',
-          effect: CardEffectType.loseMoney,
-          amount: 15,
+          description:
+              'Arasaka claim. If you hold 2 of a district, seize the third for 120% now — or decline.',
+          effect: CardEffectType.eminentDomain,
         ),
         GameCard(
           id: 'db_loan',
@@ -288,12 +290,11 @@ abstract final class CyberCardCatalog {
           amount: 40,
         ),
         GameCard(
-          id: 'cb_beauty',
+          id: 'cb_ledger',
           deck: CardDeckKind.corpoBounty,
           title: 'CORPO BOUNTY',
-          description: 'You won a street beauty contest — ₵10.',
-          effect: CardEffectType.gainMoney,
-          amount: 10,
+          description: 'Ledger leak — swap your stack with the poorest living operative.',
+          effect: CardEffectType.ledgerLeak,
         ),
         GameCard(
           id: 'cb_inherit',

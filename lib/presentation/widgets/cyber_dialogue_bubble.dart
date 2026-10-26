@@ -41,55 +41,73 @@ class _CyberDialogueBubbleState extends ConsumerState<CyberDialogueBubble> {
     }
     if (speaker == null) return const SizedBox.shrink();
 
-    return Align(
-      alignment: Alignment.topCenter,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
-        child: CyberTheme.glass(
-          glowColor: speaker.tokenColor.color,
-          padding: const EdgeInsets.all(10),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: speaker.tokenColor.color,
-                child: Text(
-                  speaker.name.isNotEmpty ? speaker.name[0].toUpperCase() : '?',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                  ),
-                ),
+    final ink = speaker.tokenColor.ink;
+    return IgnorePointer(
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: const EdgeInsets.only(top: 6, left: 12, right: 12),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: CyberColors.deepIndigo.withValues(alpha: 0.96),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: speaker.tokenColor.color.withValues(alpha: 0.85),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      speaker.name.toUpperCase(),
-                      style: GoogleFonts.orbitron(
-                        color: speaker.tokenColor.color,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _visible,
-                      style: GoogleFonts.shareTechMono(
-                        color: CyberColors.textPrimary,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 14,
+                    backgroundColor: speaker.tokenColor.color,
+                    child: Text(
+                      speaker.name.isNotEmpty
+                          ? speaker.name[0].toUpperCase()
+                          : '?',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
                         fontSize: 12,
-                        height: 1.3,
+                        color: ink,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          speaker.name.toUpperCase(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.orbitron(
+                            color: speaker.tokenColor.color,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          _visible,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.shareTechMono(
+                            color: CyberColors.textPrimary,
+                            fontSize: 12,
+                            height: 1.25,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

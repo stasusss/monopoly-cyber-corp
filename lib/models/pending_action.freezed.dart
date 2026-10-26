@@ -33,6 +33,8 @@ PendingAction _$PendingActionFromJson(Map<String, dynamic> json) {
       return PendingTradeOffer.fromJson(json);
     case 'winner':
       return PendingWinner.fromJson(json);
+    case 'claimOffer':
+      return PendingClaimOffer.fromJson(json);
 
     default:
       throw CheckedFromJsonException(
@@ -80,7 +82,10 @@ mixin _$PendingAction {
       List<int> requestProperties,
     )
     tradeOffer,
-    required TResult Function(String playerId, String playerName) winner,
+    required TResult Function(String playerId, String playerName, int netWorth)
+    winner,
+    required TResult Function(List<int> cellIndexes, bool consumesBuyout)
+    claimOffer,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
@@ -114,7 +119,8 @@ mixin _$PendingAction {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult? Function(String playerId, String playerName)? winner,
+    TResult? Function(String playerId, String playerName, int netWorth)? winner,
+    TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
@@ -148,7 +154,8 @@ mixin _$PendingAction {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult Function(String playerId, String playerName)? winner,
+    TResult Function(String playerId, String playerName, int netWorth)? winner,
+    TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
     required TResult orElse(),
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -161,6 +168,7 @@ mixin _$PendingAction {
     required TResult Function(PendingAuction value) auction,
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
+    required TResult Function(PendingClaimOffer value) claimOffer,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
@@ -172,6 +180,7 @@ mixin _$PendingAction {
     TResult? Function(PendingAuction value)? auction,
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
+    TResult? Function(PendingClaimOffer value)? claimOffer,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
@@ -183,6 +192,7 @@ mixin _$PendingAction {
     TResult Function(PendingAuction value)? auction,
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
+    TResult Function(PendingClaimOffer value)? claimOffer,
     required TResult orElse(),
   }) => throw _privateConstructorUsedError;
 
@@ -294,7 +304,10 @@ class _$PendingNoneImpl implements PendingNone {
       List<int> requestProperties,
     )
     tradeOffer,
-    required TResult Function(String playerId, String playerName) winner,
+    required TResult Function(String playerId, String playerName, int netWorth)
+    winner,
+    required TResult Function(List<int> cellIndexes, bool consumesBuyout)
+    claimOffer,
   }) {
     return none();
   }
@@ -332,7 +345,8 @@ class _$PendingNoneImpl implements PendingNone {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult? Function(String playerId, String playerName)? winner,
+    TResult? Function(String playerId, String playerName, int netWorth)? winner,
+    TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
   }) {
     return none?.call();
   }
@@ -370,7 +384,8 @@ class _$PendingNoneImpl implements PendingNone {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult Function(String playerId, String playerName)? winner,
+    TResult Function(String playerId, String playerName, int netWorth)? winner,
+    TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
     required TResult orElse(),
   }) {
     if (none != null) {
@@ -390,6 +405,7 @@ class _$PendingNoneImpl implements PendingNone {
     required TResult Function(PendingAuction value) auction,
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
+    required TResult Function(PendingClaimOffer value) claimOffer,
   }) {
     return none(this);
   }
@@ -405,6 +421,7 @@ class _$PendingNoneImpl implements PendingNone {
     TResult? Function(PendingAuction value)? auction,
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
+    TResult? Function(PendingClaimOffer value)? claimOffer,
   }) {
     return none?.call(this);
   }
@@ -420,6 +437,7 @@ class _$PendingNoneImpl implements PendingNone {
     TResult Function(PendingAuction value)? auction,
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
+    TResult Function(PendingClaimOffer value)? claimOffer,
     required TResult orElse(),
   }) {
     if (none != null) {
@@ -578,7 +596,10 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
       List<int> requestProperties,
     )
     tradeOffer,
-    required TResult Function(String playerId, String playerName) winner,
+    required TResult Function(String playerId, String playerName, int netWorth)
+    winner,
+    required TResult Function(List<int> cellIndexes, bool consumesBuyout)
+    claimOffer,
   }) {
     return buyOffer(cellIndex, propertyName, price);
   }
@@ -616,7 +637,8 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult? Function(String playerId, String playerName)? winner,
+    TResult? Function(String playerId, String playerName, int netWorth)? winner,
+    TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
   }) {
     return buyOffer?.call(cellIndex, propertyName, price);
   }
@@ -654,7 +676,8 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult Function(String playerId, String playerName)? winner,
+    TResult Function(String playerId, String playerName, int netWorth)? winner,
+    TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
     required TResult orElse(),
   }) {
     if (buyOffer != null) {
@@ -674,6 +697,7 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
     required TResult Function(PendingAuction value) auction,
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
+    required TResult Function(PendingClaimOffer value) claimOffer,
   }) {
     return buyOffer(this);
   }
@@ -689,6 +713,7 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
     TResult? Function(PendingAuction value)? auction,
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
+    TResult? Function(PendingClaimOffer value)? claimOffer,
   }) {
     return buyOffer?.call(this);
   }
@@ -704,6 +729,7 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
     TResult Function(PendingAuction value)? auction,
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
+    TResult Function(PendingClaimOffer value)? claimOffer,
     required TResult orElse(),
   }) {
     if (buyOffer != null) {
@@ -892,7 +918,10 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
       List<int> requestProperties,
     )
     tradeOffer,
-    required TResult Function(String playerId, String playerName) winner,
+    required TResult Function(String playerId, String playerName, int netWorth)
+    winner,
+    required TResult Function(List<int> cellIndexes, bool consumesBuyout)
+    claimOffer,
   }) {
     return rentNotice(payerName, ownerName, propertyName, amount);
   }
@@ -930,7 +959,8 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult? Function(String playerId, String playerName)? winner,
+    TResult? Function(String playerId, String playerName, int netWorth)? winner,
+    TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
   }) {
     return rentNotice?.call(payerName, ownerName, propertyName, amount);
   }
@@ -968,7 +998,8 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult Function(String playerId, String playerName)? winner,
+    TResult Function(String playerId, String playerName, int netWorth)? winner,
+    TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
     required TResult orElse(),
   }) {
     if (rentNotice != null) {
@@ -988,6 +1019,7 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
     required TResult Function(PendingAuction value) auction,
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
+    required TResult Function(PendingClaimOffer value) claimOffer,
   }) {
     return rentNotice(this);
   }
@@ -1003,6 +1035,7 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
     TResult? Function(PendingAuction value)? auction,
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
+    TResult? Function(PendingClaimOffer value)? claimOffer,
   }) {
     return rentNotice?.call(this);
   }
@@ -1018,6 +1051,7 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
     TResult Function(PendingAuction value)? auction,
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
+    TResult Function(PendingClaimOffer value)? claimOffer,
     required TResult orElse(),
   }) {
     if (rentNotice != null) {
@@ -1191,7 +1225,10 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
       List<int> requestProperties,
     )
     tradeOffer,
-    required TResult Function(String playerId, String playerName) winner,
+    required TResult Function(String playerId, String playerName, int netWorth)
+    winner,
+    required TResult Function(List<int> cellIndexes, bool consumesBuyout)
+    claimOffer,
   }) {
     return taxNotice(playerName, taxName, amount);
   }
@@ -1229,7 +1266,8 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult? Function(String playerId, String playerName)? winner,
+    TResult? Function(String playerId, String playerName, int netWorth)? winner,
+    TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
   }) {
     return taxNotice?.call(playerName, taxName, amount);
   }
@@ -1267,7 +1305,8 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult Function(String playerId, String playerName)? winner,
+    TResult Function(String playerId, String playerName, int netWorth)? winner,
+    TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
     required TResult orElse(),
   }) {
     if (taxNotice != null) {
@@ -1287,6 +1326,7 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
     required TResult Function(PendingAuction value) auction,
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
+    required TResult Function(PendingClaimOffer value) claimOffer,
   }) {
     return taxNotice(this);
   }
@@ -1302,6 +1342,7 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
     TResult? Function(PendingAuction value)? auction,
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
+    TResult? Function(PendingClaimOffer value)? claimOffer,
   }) {
     return taxNotice?.call(this);
   }
@@ -1317,6 +1358,7 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
     TResult Function(PendingAuction value)? auction,
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
+    TResult Function(PendingClaimOffer value)? claimOffer,
     required TResult orElse(),
   }) {
     if (taxNotice != null) {
@@ -1476,7 +1518,10 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
       List<int> requestProperties,
     )
     tradeOffer,
-    required TResult Function(String playerId, String playerName) winner,
+    required TResult Function(String playerId, String playerName, int netWorth)
+    winner,
+    required TResult Function(List<int> cellIndexes, bool consumesBuyout)
+    claimOffer,
   }) {
     return cardNotice(title, description);
   }
@@ -1514,7 +1559,8 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult? Function(String playerId, String playerName)? winner,
+    TResult? Function(String playerId, String playerName, int netWorth)? winner,
+    TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
   }) {
     return cardNotice?.call(title, description);
   }
@@ -1552,7 +1598,8 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult Function(String playerId, String playerName)? winner,
+    TResult Function(String playerId, String playerName, int netWorth)? winner,
+    TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
     required TResult orElse(),
   }) {
     if (cardNotice != null) {
@@ -1572,6 +1619,7 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
     required TResult Function(PendingAuction value) auction,
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
+    required TResult Function(PendingClaimOffer value) claimOffer,
   }) {
     return cardNotice(this);
   }
@@ -1587,6 +1635,7 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
     TResult? Function(PendingAuction value)? auction,
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
+    TResult? Function(PendingClaimOffer value)? claimOffer,
   }) {
     return cardNotice?.call(this);
   }
@@ -1602,6 +1651,7 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
     TResult Function(PendingAuction value)? auction,
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
+    TResult Function(PendingClaimOffer value)? claimOffer,
     required TResult orElse(),
   }) {
     if (cardNotice != null) {
@@ -1847,7 +1897,10 @@ class _$PendingAuctionImpl implements PendingAuction {
       List<int> requestProperties,
     )
     tradeOffer,
-    required TResult Function(String playerId, String playerName) winner,
+    required TResult Function(String playerId, String playerName, int netWorth)
+    winner,
+    required TResult Function(List<int> cellIndexes, bool consumesBuyout)
+    claimOffer,
   }) {
     return auction(
       cellIndex,
@@ -1893,7 +1946,8 @@ class _$PendingAuctionImpl implements PendingAuction {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult? Function(String playerId, String playerName)? winner,
+    TResult? Function(String playerId, String playerName, int netWorth)? winner,
+    TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
   }) {
     return auction?.call(
       cellIndex,
@@ -1939,7 +1993,8 @@ class _$PendingAuctionImpl implements PendingAuction {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult Function(String playerId, String playerName)? winner,
+    TResult Function(String playerId, String playerName, int netWorth)? winner,
+    TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
     required TResult orElse(),
   }) {
     if (auction != null) {
@@ -1967,6 +2022,7 @@ class _$PendingAuctionImpl implements PendingAuction {
     required TResult Function(PendingAuction value) auction,
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
+    required TResult Function(PendingClaimOffer value) claimOffer,
   }) {
     return auction(this);
   }
@@ -1982,6 +2038,7 @@ class _$PendingAuctionImpl implements PendingAuction {
     TResult? Function(PendingAuction value)? auction,
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
+    TResult? Function(PendingClaimOffer value)? claimOffer,
   }) {
     return auction?.call(this);
   }
@@ -1997,6 +2054,7 @@ class _$PendingAuctionImpl implements PendingAuction {
     TResult Function(PendingAuction value)? auction,
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
+    TResult Function(PendingClaimOffer value)? claimOffer,
     required TResult orElse(),
   }) {
     if (auction != null) {
@@ -2241,7 +2299,10 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
       List<int> requestProperties,
     )
     tradeOffer,
-    required TResult Function(String playerId, String playerName) winner,
+    required TResult Function(String playerId, String playerName, int netWorth)
+    winner,
+    required TResult Function(List<int> cellIndexes, bool consumesBuyout)
+    claimOffer,
   }) {
     return tradeOffer(
       fromPlayerId,
@@ -2286,7 +2347,8 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult? Function(String playerId, String playerName)? winner,
+    TResult? Function(String playerId, String playerName, int netWorth)? winner,
+    TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
   }) {
     return tradeOffer?.call(
       fromPlayerId,
@@ -2331,7 +2393,8 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult Function(String playerId, String playerName)? winner,
+    TResult Function(String playerId, String playerName, int netWorth)? winner,
+    TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
     required TResult orElse(),
   }) {
     if (tradeOffer != null) {
@@ -2358,6 +2421,7 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
     required TResult Function(PendingAuction value) auction,
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
+    required TResult Function(PendingClaimOffer value) claimOffer,
   }) {
     return tradeOffer(this);
   }
@@ -2373,6 +2437,7 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
     TResult? Function(PendingAuction value)? auction,
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
+    TResult? Function(PendingClaimOffer value)? claimOffer,
   }) {
     return tradeOffer?.call(this);
   }
@@ -2388,6 +2453,7 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
     TResult Function(PendingAuction value)? auction,
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
+    TResult Function(PendingClaimOffer value)? claimOffer,
     required TResult orElse(),
   }) {
     if (tradeOffer != null) {
@@ -2436,7 +2502,7 @@ abstract class _$$PendingWinnerImplCopyWith<$Res> {
     $Res Function(_$PendingWinnerImpl) then,
   ) = __$$PendingWinnerImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({String playerId, String playerName});
+  $Res call({String playerId, String playerName, int netWorth});
 }
 
 /// @nodoc
@@ -2452,7 +2518,11 @@ class __$$PendingWinnerImplCopyWithImpl<$Res>
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? playerId = null, Object? playerName = null}) {
+  $Res call({
+    Object? playerId = null,
+    Object? playerName = null,
+    Object? netWorth = null,
+  }) {
     return _then(
       _$PendingWinnerImpl(
         playerId: null == playerId
@@ -2463,6 +2533,10 @@ class __$$PendingWinnerImplCopyWithImpl<$Res>
             ? _value.playerName
             : playerName // ignore: cast_nullable_to_non_nullable
                   as String,
+        netWorth: null == netWorth
+            ? _value.netWorth
+            : netWorth // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -2474,6 +2548,7 @@ class _$PendingWinnerImpl implements PendingWinner {
   const _$PendingWinnerImpl({
     required this.playerId,
     required this.playerName,
+    this.netWorth = 0,
     final String? $type,
   }) : $type = $type ?? 'winner';
 
@@ -2484,13 +2559,16 @@ class _$PendingWinnerImpl implements PendingWinner {
   final String playerId;
   @override
   final String playerName;
+  @override
+  @JsonKey()
+  final int netWorth;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
   @override
   String toString() {
-    return 'PendingAction.winner(playerId: $playerId, playerName: $playerName)';
+    return 'PendingAction.winner(playerId: $playerId, playerName: $playerName, netWorth: $netWorth)';
   }
 
   @override
@@ -2501,12 +2579,14 @@ class _$PendingWinnerImpl implements PendingWinner {
             (identical(other.playerId, playerId) ||
                 other.playerId == playerId) &&
             (identical(other.playerName, playerName) ||
-                other.playerName == playerName));
+                other.playerName == playerName) &&
+            (identical(other.netWorth, netWorth) ||
+                other.netWorth == netWorth));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, playerId, playerName);
+  int get hashCode => Object.hash(runtimeType, playerId, playerName, netWorth);
 
   /// Create a copy of PendingAction
   /// with the given fields replaced by the non-null parameter values.
@@ -2551,9 +2631,12 @@ class _$PendingWinnerImpl implements PendingWinner {
       List<int> requestProperties,
     )
     tradeOffer,
-    required TResult Function(String playerId, String playerName) winner,
+    required TResult Function(String playerId, String playerName, int netWorth)
+    winner,
+    required TResult Function(List<int> cellIndexes, bool consumesBuyout)
+    claimOffer,
   }) {
-    return winner(playerId, playerName);
+    return winner(playerId, playerName, netWorth);
   }
 
   @override
@@ -2589,9 +2672,10 @@ class _$PendingWinnerImpl implements PendingWinner {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult? Function(String playerId, String playerName)? winner,
+    TResult? Function(String playerId, String playerName, int netWorth)? winner,
+    TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
   }) {
-    return winner?.call(playerId, playerName);
+    return winner?.call(playerId, playerName, netWorth);
   }
 
   @override
@@ -2627,11 +2711,12 @@ class _$PendingWinnerImpl implements PendingWinner {
       List<int> requestProperties,
     )?
     tradeOffer,
-    TResult Function(String playerId, String playerName)? winner,
+    TResult Function(String playerId, String playerName, int netWorth)? winner,
+    TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
     required TResult orElse(),
   }) {
     if (winner != null) {
-      return winner(playerId, playerName);
+      return winner(playerId, playerName, netWorth);
     }
     return orElse();
   }
@@ -2647,6 +2732,7 @@ class _$PendingWinnerImpl implements PendingWinner {
     required TResult Function(PendingAuction value) auction,
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
+    required TResult Function(PendingClaimOffer value) claimOffer,
   }) {
     return winner(this);
   }
@@ -2662,6 +2748,7 @@ class _$PendingWinnerImpl implements PendingWinner {
     TResult? Function(PendingAuction value)? auction,
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
+    TResult? Function(PendingClaimOffer value)? claimOffer,
   }) {
     return winner?.call(this);
   }
@@ -2677,6 +2764,7 @@ class _$PendingWinnerImpl implements PendingWinner {
     TResult Function(PendingAuction value)? auction,
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
+    TResult Function(PendingClaimOffer value)? claimOffer,
     required TResult orElse(),
   }) {
     if (winner != null) {
@@ -2695,6 +2783,7 @@ abstract class PendingWinner implements PendingAction {
   const factory PendingWinner({
     required final String playerId,
     required final String playerName,
+    final int netWorth,
   }) = _$PendingWinnerImpl;
 
   factory PendingWinner.fromJson(Map<String, dynamic> json) =
@@ -2702,10 +2791,316 @@ abstract class PendingWinner implements PendingAction {
 
   String get playerId;
   String get playerName;
+  int get netWorth;
 
   /// Create a copy of PendingAction
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$PendingWinnerImplCopyWith<_$PendingWinnerImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$PendingClaimOfferImplCopyWith<$Res> {
+  factory _$$PendingClaimOfferImplCopyWith(
+    _$PendingClaimOfferImpl value,
+    $Res Function(_$PendingClaimOfferImpl) then,
+  ) = __$$PendingClaimOfferImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({List<int> cellIndexes, bool consumesBuyout});
+}
+
+/// @nodoc
+class __$$PendingClaimOfferImplCopyWithImpl<$Res>
+    extends _$PendingActionCopyWithImpl<$Res, _$PendingClaimOfferImpl>
+    implements _$$PendingClaimOfferImplCopyWith<$Res> {
+  __$$PendingClaimOfferImplCopyWithImpl(
+    _$PendingClaimOfferImpl _value,
+    $Res Function(_$PendingClaimOfferImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of PendingAction
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? cellIndexes = null, Object? consumesBuyout = null}) {
+    return _then(
+      _$PendingClaimOfferImpl(
+        cellIndexes: null == cellIndexes
+            ? _value._cellIndexes
+            : cellIndexes // ignore: cast_nullable_to_non_nullable
+                  as List<int>,
+        consumesBuyout: null == consumesBuyout
+            ? _value.consumesBuyout
+            : consumesBuyout // ignore: cast_nullable_to_non_nullable
+                  as bool,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$PendingClaimOfferImpl implements PendingClaimOffer {
+  const _$PendingClaimOfferImpl({
+    required final List<int> cellIndexes,
+    required this.consumesBuyout,
+    final String? $type,
+  }) : _cellIndexes = cellIndexes,
+       $type = $type ?? 'claimOffer';
+
+  factory _$PendingClaimOfferImpl.fromJson(Map<String, dynamic> json) =>
+      _$$PendingClaimOfferImplFromJson(json);
+
+  final List<int> _cellIndexes;
+  @override
+  List<int> get cellIndexes {
+    if (_cellIndexes is EqualUnmodifiableListView) return _cellIndexes;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_cellIndexes);
+  }
+
+  @override
+  final bool consumesBuyout;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  @override
+  String toString() {
+    return 'PendingAction.claimOffer(cellIndexes: $cellIndexes, consumesBuyout: $consumesBuyout)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$PendingClaimOfferImpl &&
+            const DeepCollectionEquality().equals(
+              other._cellIndexes,
+              _cellIndexes,
+            ) &&
+            (identical(other.consumesBuyout, consumesBuyout) ||
+                other.consumesBuyout == consumesBuyout));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(
+    runtimeType,
+    const DeepCollectionEquality().hash(_cellIndexes),
+    consumesBuyout,
+  );
+
+  /// Create a copy of PendingAction
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$PendingClaimOfferImplCopyWith<_$PendingClaimOfferImpl> get copyWith =>
+      __$$PendingClaimOfferImplCopyWithImpl<_$PendingClaimOfferImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() none,
+    required TResult Function(int cellIndex, String propertyName, int price)
+    buyOffer,
+    required TResult Function(
+      String payerName,
+      String ownerName,
+      String propertyName,
+      int amount,
+    )
+    rentNotice,
+    required TResult Function(String playerName, String taxName, int amount)
+    taxNotice,
+    required TResult Function(String title, String description) cardNotice,
+    required TResult Function(
+      int cellIndex,
+      String propertyName,
+      int highestBid,
+      String? highestBidderId,
+      String currentBidderId,
+      List<String> participantIds,
+      List<String> passedIds,
+    )
+    auction,
+    required TResult Function(
+      String fromPlayerId,
+      String toPlayerId,
+      int offerCash,
+      int requestCash,
+      List<int> offerProperties,
+      List<int> requestProperties,
+    )
+    tradeOffer,
+    required TResult Function(String playerId, String playerName, int netWorth)
+    winner,
+    required TResult Function(List<int> cellIndexes, bool consumesBuyout)
+    claimOffer,
+  }) {
+    return claimOffer(cellIndexes, consumesBuyout);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? none,
+    TResult? Function(int cellIndex, String propertyName, int price)? buyOffer,
+    TResult? Function(
+      String payerName,
+      String ownerName,
+      String propertyName,
+      int amount,
+    )?
+    rentNotice,
+    TResult? Function(String playerName, String taxName, int amount)? taxNotice,
+    TResult? Function(String title, String description)? cardNotice,
+    TResult? Function(
+      int cellIndex,
+      String propertyName,
+      int highestBid,
+      String? highestBidderId,
+      String currentBidderId,
+      List<String> participantIds,
+      List<String> passedIds,
+    )?
+    auction,
+    TResult? Function(
+      String fromPlayerId,
+      String toPlayerId,
+      int offerCash,
+      int requestCash,
+      List<int> offerProperties,
+      List<int> requestProperties,
+    )?
+    tradeOffer,
+    TResult? Function(String playerId, String playerName, int netWorth)? winner,
+    TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+  }) {
+    return claimOffer?.call(cellIndexes, consumesBuyout);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? none,
+    TResult Function(int cellIndex, String propertyName, int price)? buyOffer,
+    TResult Function(
+      String payerName,
+      String ownerName,
+      String propertyName,
+      int amount,
+    )?
+    rentNotice,
+    TResult Function(String playerName, String taxName, int amount)? taxNotice,
+    TResult Function(String title, String description)? cardNotice,
+    TResult Function(
+      int cellIndex,
+      String propertyName,
+      int highestBid,
+      String? highestBidderId,
+      String currentBidderId,
+      List<String> participantIds,
+      List<String> passedIds,
+    )?
+    auction,
+    TResult Function(
+      String fromPlayerId,
+      String toPlayerId,
+      int offerCash,
+      int requestCash,
+      List<int> offerProperties,
+      List<int> requestProperties,
+    )?
+    tradeOffer,
+    TResult Function(String playerId, String playerName, int netWorth)? winner,
+    TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    required TResult orElse(),
+  }) {
+    if (claimOffer != null) {
+      return claimOffer(cellIndexes, consumesBuyout);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(PendingNone value) none,
+    required TResult Function(PendingBuyOffer value) buyOffer,
+    required TResult Function(PendingRentNotice value) rentNotice,
+    required TResult Function(PendingTaxNotice value) taxNotice,
+    required TResult Function(PendingCardNotice value) cardNotice,
+    required TResult Function(PendingAuction value) auction,
+    required TResult Function(PendingTradeOffer value) tradeOffer,
+    required TResult Function(PendingWinner value) winner,
+    required TResult Function(PendingClaimOffer value) claimOffer,
+  }) {
+    return claimOffer(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(PendingNone value)? none,
+    TResult? Function(PendingBuyOffer value)? buyOffer,
+    TResult? Function(PendingRentNotice value)? rentNotice,
+    TResult? Function(PendingTaxNotice value)? taxNotice,
+    TResult? Function(PendingCardNotice value)? cardNotice,
+    TResult? Function(PendingAuction value)? auction,
+    TResult? Function(PendingTradeOffer value)? tradeOffer,
+    TResult? Function(PendingWinner value)? winner,
+    TResult? Function(PendingClaimOffer value)? claimOffer,
+  }) {
+    return claimOffer?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(PendingNone value)? none,
+    TResult Function(PendingBuyOffer value)? buyOffer,
+    TResult Function(PendingRentNotice value)? rentNotice,
+    TResult Function(PendingTaxNotice value)? taxNotice,
+    TResult Function(PendingCardNotice value)? cardNotice,
+    TResult Function(PendingAuction value)? auction,
+    TResult Function(PendingTradeOffer value)? tradeOffer,
+    TResult Function(PendingWinner value)? winner,
+    TResult Function(PendingClaimOffer value)? claimOffer,
+    required TResult orElse(),
+  }) {
+    if (claimOffer != null) {
+      return claimOffer(this);
+    }
+    return orElse();
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$PendingClaimOfferImplToJson(this);
+  }
+}
+
+abstract class PendingClaimOffer implements PendingAction {
+  const factory PendingClaimOffer({
+    required final List<int> cellIndexes,
+    required final bool consumesBuyout,
+  }) = _$PendingClaimOfferImpl;
+
+  factory PendingClaimOffer.fromJson(Map<String, dynamic> json) =
+      _$PendingClaimOfferImpl.fromJson;
+
+  List<int> get cellIndexes;
+  bool get consumesBuyout;
+
+  /// Create a copy of PendingAction
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$PendingClaimOfferImplCopyWith<_$PendingClaimOfferImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

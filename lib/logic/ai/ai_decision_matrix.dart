@@ -3,6 +3,7 @@ import '../../core/constants/street_colors.dart';
 import '../../models/cell.dart';
 import '../../models/game_state.dart';
 import '../../models/player.dart';
+import '../nightfall.dart';
 import '../rules_engine.dart';
 
 /// One step in the bankruptcy / fund-raising liquidation queue.
@@ -34,6 +35,7 @@ abstract final class AiDecisionMatrix {
         cell: cell,
         board: state.board,
         diceTotal: 7,
+        suppressed: Nightfall.cellSuppressed(state, cell.index),
       );
       if (rent > 0) threats.add(rent);
     }
@@ -212,7 +214,17 @@ abstract final class AiDecisionMatrix {
         if (street.houses != minHouses) continue;
         if (street.houses >= 5) continue;
 
-        final cost = group.houseCost;
+        final cost = Nightfall.nodeCost(group, street.houses);
+        if (street.houses >= GameRules.developStopAtHouses &&
+            Nightfall.opponentStillLiquid(state, ai)) {
+          continue;
+        }
+        final buildingHotel = street.houses >= 4;
+        if (buildingHotel) {
+          if (state.hotelsInBank <= 0) continue;
+        } else if (state.housesInBank <= 0) {
+          continue;
+        }
         if (ai.balance - cost < cashBuffer(state, ai) * 0.6 &&
             profile == AiProfile.banker) {
           continue;
@@ -289,24 +301,25 @@ abstract final class AiDecisionMatrix {
       simulated[idx] = cell.copyWith(isMortgaged: true);
     }
 
-    // 3) Sell houses (hotels first), then mortgage monopoly streets.
-    final withHouses = simulated.entries
-        .where((e) => e.value is PropertyCell && (e.value as PropertyCell).houses > 0)
-        .toList()
-      ..sort((a, b) {
-        final ha = (a.value as PropertyCell).houses;
-        final hb = (b.value as PropertyCell).houses;
-        return hb.compareTo(ha);
-      });
-
-    for (final entry in withHouses) {
-      while (stillNeed()) {
-        final cell = simulated[entry.key] as PropertyCell;
-        if (cell.houses <= 0) break;
-        steps.add(SellHouseStep(entry.key));
-        raised += cell.colorGroup.houseCost ~/ 2;
-        simulated[entry.key] = cell.copyWith(houses: cell.houses - 1);
+    // 3) Sell houses evenly (one level off the current tallest), then mortgage.
+    while (stillNeed()) {
+      PropertyCell? peel;
+      for (final entry in simulated.entries) {
+        final cell = entry.value;
+        if (cell is! PropertyCell || cell.houses <= 0) continue;
+        final mates = simulated.values.whereType<PropertyCell>().where(
+              (c) => c.colorGroup == cell.colorGroup && c.ownerId == ai.id,
+            );
+        final maxHouses = mates.map((c) => c.houses).reduce(
+              (a, b) => a > b ? a : b,
+            );
+        if (cell.houses != maxHouses) continue;
+        if (peel == null || cell.houses > peel.houses) peel = cell;
       }
+      if (peel == null) break;
+      steps.add(SellHouseStep(peel.index));
+      raised += Nightfall.nodeRefund(peel.colorGroup, peel.houses);
+      simulated[peel.index] = peel.copyWith(houses: peel.houses - 1);
     }
 
     for (final idx in [...ai.propertyIndexes]) {
@@ -321,6 +334,97 @@ abstract final class AiDecisionMatrix {
     }
 
     return steps;
+  }
+
+  /// Free exit. Late game the bot keeps the card and sits in ICE until the
+  /// last turn, when the fine would otherwise be forced.
+  static bool shouldUseJailCard({
+    required GameState state,
+    required Player ai,
+  }) {
+    if (!ai.inJail || ai.getOutOfJailCards <= 0) return false;
+    if (isLateGame(state) && ai.jailTurns < GameRules.maxJailTurns - 1) {
+      return false;
+    }
+    return true;
+  }
+
+  static bool shouldDrawOverdraft({
+    required GameState state,
+    required Player ai,
+  }) {
+    if (ai.overdraftUsed || ai.isBankrupt) return false;
+    if (Nightfall.overdraftPrincipal(state, ai) < 100) return false;
+    return ai.balance < 200;
+  }
+
+  /// Unimproved blocker that completes a 3-street district, best traffic first.
+  static int? preferredBuyout({
+    required GameState state,
+    required Player ai,
+  }) {
+    if (ai.buyoutUsed) return null;
+    return _bestAffordableClaim(state, ai, Nightfall.claimTargets(state, ai));
+  }
+
+  static int? preferredClaim(
+    GameState state,
+    Player ai,
+    List<int> indexes,
+  ) {
+    return _bestAffordableClaim(state, ai, indexes);
+  }
+
+  static int? _bestAffordableClaim(
+    GameState state,
+    Player ai,
+    List<int> indexes,
+  ) {
+    int? best;
+    var bestScore = -1.0;
+    for (final index in indexes) {
+      final cell = state.cellAt(index);
+      if (cell is! PropertyCell) continue;
+      final price = Nightfall.buyoutPrice(cell.price);
+      if (ai.balance < price) continue;
+      final score = _trafficScore(cell.colorGroup);
+      if (score > bestScore) {
+        bestScore = score;
+        best = index;
+      }
+    }
+    return best;
+  }
+
+  /// Shut down the scariest developed opponent node, once per turn.
+  static int? preferredBlackout({
+    required GameState state,
+    required Player ai,
+  }) {
+    if (ai.blackoutUsedThisTurn) return null;
+    int? best;
+    var bestRent = 0;
+    for (final cell in state.board.whereType<PropertyCell>()) {
+      if (cell.ownerId == null || cell.ownerId == ai.id) continue;
+      if (cell.houses < 1 || cell.isMortgaged) continue;
+      if (state.blackoutGroupsThisRound.contains(cell.colorGroup.name)) {
+        continue;
+      }
+      if (Nightfall.cellSuppressed(state, cell.index)) continue;
+      final cost = Nightfall.blackoutCost(cell.colorGroup);
+      if (ai.balance < cost) continue;
+      final rent = RulesEngine.calculateRent(
+        cell: cell,
+        board: state.board,
+        diceTotal: 7,
+      );
+      if (rent > bestRent) {
+        bestRent = rent;
+        best = cell.index;
+      }
+    }
+    if (bestRent < 100) return null;
+    return best;
   }
 
   static bool _isHighTraffic(ColorGroup g) =>

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/constants/game_rules.dart';
+import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
 import '../../models/game_state.dart';
 import '../../models/pending_action.dart';
+import '../widgets/turn_action_button.dart';
+import 'empire_menu.dart';
 
-/// Bottom control bar for narrow layouts (mirrors center panel actions).
+/// Thumb-zone actions for narrow layouts. The board center does not repeat them.
 class GameControlsBar extends ConsumerWidget {
   const GameControlsBar({super.key});
 
@@ -24,25 +28,55 @@ class GameControlsBar extends ConsumerWidget {
         idle &&
         state.phase == TurnPhase.canEndTurn &&
         !state.isGameOver;
+    final canBail = localOk &&
+        idle &&
+        state.activePlayer.inJail &&
+        state.phase == TurnPhase.waitingForRoll &&
+        !state.isGameOver;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const EmpireMenu(),
+          const SizedBox(height: 6),
+          Row(
         children: [
           Expanded(
-            child: FilledButton.icon(
+            child: TurnActionButton(
+              pulse: canRoll,
               onPressed: canRoll ? c.rollDice : null,
-              icon: const Icon(Icons.casino),
-              label: const Text('ROLL DICE'),
+              icon: Icons.casino,
+              label: 'ROLL',
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: canEnd ? c.endTurn : null,
-              icon: const Icon(Icons.flag),
-              label: const Text('END TURN'),
+          if (state.activePlayer.inJail &&
+              state.phase == TurnPhase.waitingForRoll) ...[
+            const SizedBox(width: 8),
+            Expanded(
+              child: TurnActionButton(
+                primary: false,
+                pulse: canBail && !canRoll,
+                pulseColor: CyberColors.cyberYellow,
+                onPressed: canBail ? c.payJailFine : null,
+                icon: Icons.lock_open,
+                label: 'BAIL ${GameRules.credits(GameRules.jailFine)}',
+              ),
             ),
+          ],
+          const SizedBox(width: 8),
+          Expanded(
+            child: TurnActionButton(
+              primary: false,
+              pulse: canEnd,
+              pulseColor: CyberColors.cyberYellow,
+              onPressed: canEnd ? c.endTurn : null,
+              icon: Icons.flag,
+              label: 'END',
+            ),
+          ),
+        ],
           ),
         ],
       ),

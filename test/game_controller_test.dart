@@ -65,6 +65,7 @@ void main() {
       random: _ScriptedRandom(rolls),
       initial: initial,
       enableAi: false,
+      autosave: false,
     );
   }
 
@@ -203,5 +204,83 @@ void main() {
     expect(c.raiseFunds(p.id, 100), isTrue);
     expect(c.state.players.first.balance, greaterThanOrEqualTo(100));
     expect((c.state.board[5] as RailroadCell).isMortgaged, isTrue);
+  });
+
+  test('safe zone hands the turn over without an END click', () {
+    final c = controllerWith(rolls: [(1, 3)]);
+    final p = c.state.activePlayer.copyWith(position: 16);
+    c.state = c.state.copyWith(players: [p, c.state.players[1]]);
+    c.rollDice();
+    c.finishMove();
+    expect(c.state.players.first.position, GameRules.freeParkingIndex);
+    expect(c.state.activePlayerIndex, 1);
+    expect(c.state.phase, TurnPhase.waitingForRoll);
+  });
+
+  test('first two nodes cost half and the third costs full', () {
+    final c = controllerWith(rolls: [(1, 1)]);
+    final me = c.state.players.first;
+    final board = [...c.state.board];
+    board[1] = (board[1] as PropertyCell).copyWith(ownerId: me.id);
+    board[3] = (board[3] as PropertyCell).copyWith(ownerId: me.id);
+    c.state = c.state.copyWith(
+      board: board,
+      players: [
+        me.copyWith(propertyIndexes: [1, 3], balance: 500),
+        c.state.players[1],
+      ],
+    );
+
+    expect(c.buildHouse(1), isTrue);
+    expect(c.state.players.first.balance, 500 - 25);
+    expect((c.state.board[1] as PropertyCell).houses, 1);
+    expect(c.state.housesInBank, GameRules.housesInSupply - 1);
+
+    expect(c.buildHouse(3), isTrue);
+    expect(c.buildHouse(1), isTrue);
+    expect(c.buildHouse(3), isTrue);
+    // Two streets × two half-price levels = 100, then the third level is full.
+    expect(c.buildHouse(1), isTrue);
+    expect((c.state.board[1] as PropertyCell).houses, 3);
+    expect(c.state.players.first.balance, 500 - 100 - 50);
+  });
+
+  test('lifting ICE costs mortgage plus 10 percent', () {
+    final c = controllerWith(rolls: [(1, 1)]);
+    final me = c.state.players.first;
+    final board = [...c.state.board];
+    board[5] = (board[5] as RailroadCell).copyWith(
+      ownerId: me.id,
+      isMortgaged: true,
+    );
+    c.state = c.state.copyWith(
+      board: board,
+      players: [
+        me.copyWith(propertyIndexes: [5], balance: 200),
+        c.state.players[1],
+      ],
+    );
+
+    expect(c.unmortgageProperty(5), isTrue);
+    expect((c.state.board[5] as RailroadCell).isMortgaged, isFalse);
+    expect(c.state.players.first.balance, 200 - 110);
+  });
+
+  test('auction bid under 50 is refused and a pass sticks', () {
+    final c = controllerWith(rolls: [(1, 2)]);
+    c.rollDice();
+    c.finishMove();
+    c.declineBuy();
+    expect(c.state.pendingAction, isA<PendingAuction>());
+    c.auctionBid(10);
+    expect((c.state.pendingAction as PendingAuction).highestBid, 0);
+    c.auctionBid(80);
+    expect((c.state.pendingAction as PendingAuction).highestBid, 80);
+    final bidder = (c.state.pendingAction as PendingAuction).currentBidderId;
+    c.auctionPass();
+    final again = c.state.pendingAction;
+    if (again is PendingAuction) {
+      expect(again.passedIds, contains(bidder));
+    }
   });
 }

@@ -64,6 +64,7 @@ void main() {
       random: _ScriptedRandom(rolls),
       initial: base,
       enableAi: false,
+      autosave: false,
     );
   }
 

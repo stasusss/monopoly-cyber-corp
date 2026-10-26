@@ -59,6 +59,7 @@ class SupabaseRealtimeService {
   Future<void> connect({
     required String roomId,
     required Player player,
+    int? joinedAtMs,
   }) async {
     final code = RoomManager.normalizeRoomCode(roomId) ?? roomId;
     await disconnect();
@@ -118,7 +119,7 @@ class SupabaseRealtimeService {
     });
 
     await subscribed.future.timeout(const Duration(seconds: 15));
-    await trackPresence(player);
+    await trackPresence(player, joinedAtMs: joinedAtMs);
   }
 
   /// Publish / refresh local presence (nickname, token, ready flag).
@@ -132,11 +133,17 @@ class SupabaseRealtimeService {
       throw StateError('Not connected to a room');
     }
     _localPlayerId = player.id;
+    final existing = _members.cast<PresenceMember?>().firstWhere(
+          (m) => m?.playerId == player.id,
+          orElse: () => null,
+        );
     final member = PresenceMember(
       playerId: player.id,
       name: player.name,
       tokenColor: player.tokenColor.name,
-      joinedAtMs: joinedAtMs ?? DateTime.now().millisecondsSinceEpoch,
+      joinedAtMs: joinedAtMs ??
+          existing?.joinedAtMs ??
+          DateTime.now().millisecondsSinceEpoch,
       presenceKey: player.id,
       ready: ready,
     );
@@ -166,28 +173,38 @@ class SupabaseRealtimeService {
   Future<void> sendAction(NetworkAction action) async {
     final channel = _channel;
     if (channel == null) {
-      throw StateError('Not connected to a room');
+      debugPrint('Realtime sendAction skipped: not connected');
+      return;
     }
-    await channel.sendBroadcastMessage(
-      event: NetworkEvents.action,
-      payload: action.toJson(),
-    );
+    try {
+      await channel.sendBroadcastMessage(
+        event: NetworkEvents.action,
+        payload: action.toJson(),
+      );
+    } catch (e, st) {
+      debugPrint('Realtime sendAction failed: $e\n$st');
+    }
   }
 
   /// Host pushes authoritative [GameState.toJson] (or lobby snapshot).
   Future<void> sendStateSync(Map<String, dynamic> stateJson) async {
     final channel = _channel;
     if (channel == null) {
-      throw StateError('Not connected to a room');
+      debugPrint('Realtime sendStateSync skipped: not connected');
+      return;
     }
-    await channel.sendBroadcastMessage(
-      event: NetworkEvents.stateSync,
-      payload: {
-        'state': stateJson,
-        'senderId': _localPlayerId,
-        'sentAt': DateTime.now().toIso8601String(),
-      },
-    );
+    try {
+      await channel.sendBroadcastMessage(
+        event: NetworkEvents.stateSync,
+        payload: {
+          'state': stateJson,
+          'senderId': _localPlayerId,
+          'sentAt': DateTime.now().toIso8601String(),
+        },
+      );
+    } catch (e, st) {
+      debugPrint('Realtime sendStateSync failed: $e\n$st');
+    }
   }
 
   Future<void> disconnect() async {

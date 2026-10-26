@@ -68,6 +68,12 @@ abstract final class GameFactory {
             propertyIndexes: const [],
             isBankrupt: false,
             getOutOfJailCards: 0,
+            jailCardSources: const [],
+            overdraftUsed: false,
+            overdraftRemaining: 0,
+            overdraftInstallmentsLeft: 0,
+            buyoutUsed: false,
+            blackoutUsedThisTurn: false,
           ),
       ],
       log: [

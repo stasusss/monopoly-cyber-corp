@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/game_rules.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../models/game_state.dart';
 import '../../models/pending_action.dart';
+import '../controls/empire_menu.dart';
+import '../widgets/animated_credits.dart';
 import '../widgets/dice_view.dart';
+import '../widgets/turn_action_button.dart';
 
 class BoardCenterPanel extends StatelessWidget {
   const BoardCenterPanel({
@@ -14,6 +18,7 @@ class BoardCenterPanel extends StatelessWidget {
     required this.onEndTurn,
     required this.onPayJailFine,
     this.inputEnabled = true,
+    this.showActions = true,
   });
 
   final GameState state;
@@ -21,6 +26,10 @@ class BoardCenterPanel extends StatelessWidget {
   final VoidCallback onEndTurn;
   final VoidCallback onPayJailFine;
   final bool inputEnabled;
+
+  /// Desktop keeps roll / end / bail in the board center.
+  /// Narrow layouts use the bottom bar instead, so the center stays readable.
+  final bool showActions;
 
   bool get _idlePending => state.pendingAction is PendingNone;
 
@@ -35,56 +44,67 @@ class BoardCenterPanel extends StatelessWidget {
         !state.isGameOver &&
         _idlePending;
     final inJail = state.activePlayer.inJail;
+    final canBail = inputEnabled &&
+        inJail &&
+        state.phase == TurnPhase.waitingForRoll &&
+        !state.isGameOver;
+    final lastLine = state.log.isEmpty ? null : state.log.last;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: CyberColors.deepIndigo.withValues(alpha: 0.92),
-        border: Border.all(
-          color: CyberColors.neonCyan.withValues(alpha: 0.45),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: CyberColors.neonCyan.withValues(alpha: 0.12),
-            blurRadius: 20,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
+    final body = Column(
+          mainAxisSize: showActions ? MainAxisSize.max : MainAxisSize.min,
           children: [
+            if (showActions) ...[
+              Text(
+                CyberLore.appTitle,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: CyberColors.neonCyan,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                    ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                CyberLore.appSubtitle,
+                style: const TextStyle(
+                  color: CyberColors.textMuted,
+                  fontSize: 11,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
             Text(
-              CyberLore.appTitle,
+              'ROUND ${state.round}/${GameRules.blitzRoundLimit}'
+              ' · RACKS ${state.housesInBank} · HQ ${state.hotelsInBank}',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: CyberColors.neonCyan,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2,
-                    shadows: [
-                      Shadow(
-                        color: CyberColors.neonCyan.withValues(alpha: 0.8),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              CyberLore.appSubtitle,
-              style: const TextStyle(
+              style: GoogleFonts.shareTechMono(
                 color: CyberColors.textMuted,
                 fontSize: 11,
-                letterSpacing: 1.2,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               'ACTIVE: ${state.activePlayer.name}'
               '${inJail ? ' · ICE LOCK' : ''}',
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: CyberColors.cyberYellow,
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            AnimatedCredits(
+              amount: state.activePlayer.balance,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.shareTechMono(
+                fontSize: showActions ? 18 : 16,
+                fontWeight: FontWeight.w800,
+                color: CyberColors.cyberYellow,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
             const SizedBox(height: 8),
@@ -92,33 +112,79 @@ class BoardCenterPanel extends StatelessWidget {
               roll: state.lastRoll,
               rolling: state.phase == TurnPhase.rolling,
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              alignment: WrapAlignment.center,
-              children: [
-                FilledButton.tonalIcon(
-                  onPressed: canRoll ? onRoll : null,
-                  icon: const Icon(Icons.casino, size: 18),
-                  label: const Text('ROLL'),
-                ),
-                if (inJail && state.phase == TurnPhase.waitingForRoll)
-                  OutlinedButton(
-                    onPressed: inputEnabled ? onPayJailFine : null,
-                    child:
-                        Text('BAIL ${GameRules.credits(GameRules.jailFine)}'),
+            if (showActions) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                alignment: WrapAlignment.center,
+                children: [
+                  TurnActionButton(
+                    pulse: canRoll,
+                    onPressed: canRoll ? onRoll : null,
+                    icon: Icons.casino,
+                    label: 'ROLL',
                   ),
-                OutlinedButton.icon(
-                  onPressed: canEnd ? onEndTurn : null,
-                  icon: const Icon(Icons.flag, size: 18),
-                  label: const Text('END TURN'),
+                  if (inJail && state.phase == TurnPhase.waitingForRoll)
+                    TurnActionButton(
+                      primary: false,
+                      pulse: canBail && !canRoll,
+                      pulseColor: CyberColors.cyberYellow,
+                      onPressed: canBail ? onPayJailFine : null,
+                      icon: Icons.lock_open,
+                      label: 'BAIL ${GameRules.credits(GameRules.jailFine)}',
+                    ),
+                  TurnActionButton(
+                    primary: false,
+                    pulse: canEnd,
+                    pulseColor: CyberColors.cyberYellow,
+                    onPressed: canEnd ? onEndTurn : null,
+                    icon: Icons.flag,
+                    label: 'END TURN',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const EmpireMenu(),
+              const SizedBox(height: 8),
+              Expanded(child: _EventLog(lines: state.log)),
+            ] else if (lastLine != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                '> $lastLine',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.shareTechMono(
+                  color: CyberColors.terminalGreen,
+                  fontSize: 11,
+                  height: 1.25,
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Expanded(child: _EventLog(lines: state.log)),
+              ),
+            ],
           ],
+        );
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: CyberColors.deepIndigo.withValues(alpha: 0.92),
+        border: Border.all(
+          color: CyberColors.neonCyan.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (showActions) return body;
+            return FittedBox(
+              fit: BoxFit.scaleDown,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: constraints.maxWidth),
+                child: body,
+              ),
+            );
+          },
         ),
       ),
     );
@@ -149,11 +215,10 @@ class _EventLog extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 4),
             child: Text(
               '> ${recent[i]}',
-              style: const TextStyle(
+              style: GoogleFonts.shareTechMono(
                 color: CyberColors.terminalGreen,
                 fontSize: 11,
                 height: 1.25,
-                fontFamily: 'monospace',
               ),
             ),
           );

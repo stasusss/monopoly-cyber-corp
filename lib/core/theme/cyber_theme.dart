@@ -38,19 +38,22 @@ abstract final class CyberLore {
   static String credits(int amount) => '$currency$amount';
 }
 
+/// Layout breakpoints shared by the shell and the board chrome.
+abstract final class CyberLayout {
+  static const double wideBreakpoint = 960;
+  static const double shortLandscapeHeight = 500;
+}
+
 abstract final class CyberTheme {
   CyberTheme._();
 
+  /// Single-layer glow. A second blurred shadow muddies small type and
+  /// costs an extra saveLayer on CanvasKit.
   static List<BoxShadow> glow(Color color, {double blur = 12, double spread = 0}) => [
         BoxShadow(
-          color: color.withValues(alpha: 0.55),
+          color: color.withValues(alpha: 0.45),
           blurRadius: blur,
           spreadRadius: spread,
-        ),
-        BoxShadow(
-          color: color.withValues(alpha: 0.25),
-          blurRadius: blur * 2,
-          spreadRadius: spread + 1,
         ),
       ];
 
@@ -177,22 +180,59 @@ abstract final class CyberTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: CyberColors.neonCyan.withValues(alpha: 0.15),
-          foregroundColor: CyberColors.neonCyan,
-          side: const BorderSide(color: CyberColors.neonCyan, width: 1.2),
+          minimumSize: const Size(48, 48),
+          tapTargetSize: MaterialTapTargetSize.padded,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
           textStyle: GoogleFonts.shareTechMono(
             fontWeight: FontWeight.w700,
             letterSpacing: 1.2,
           ),
+        ).copyWith(
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return CyberColors.textMuted;
+            }
+            return CyberColors.neonCyan;
+          }),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return CyberColors.panel;
+            }
+            return CyberColors.neonCyan.withValues(alpha: 0.15);
+          }),
+          side: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return const BorderSide(color: CyberColors.gridLine, width: 1.2);
+            }
+            return const BorderSide(color: CyberColors.neonCyan, width: 1.2);
+          }),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: CyberColors.cyberYellow,
-          side: const BorderSide(color: CyberColors.cyberYellow, width: 1.2),
+          minimumSize: const Size(48, 48),
+          tapTargetSize: MaterialTapTargetSize.padded,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
           textStyle: GoogleFonts.shareTechMono(letterSpacing: 1),
+        ).copyWith(
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return CyberColors.textMuted;
+            }
+            return CyberColors.cyberYellow;
+          }),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return CyberColors.panel.withValues(alpha: 0.65);
+            }
+            return Colors.transparent;
+          }),
+          side: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return const BorderSide(color: CyberColors.gridLine, width: 1.2);
+            }
+            return const BorderSide(color: CyberColors.cyberYellow, width: 1.2);
+          }),
         ),
       ),
       dialogTheme: DialogThemeData(

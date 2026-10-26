@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/game_rules.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
+import '../../logic/nightfall.dart';
+import '../../models/game_state.dart';
 import '../../models/pending_action.dart';
 import 'auction_dialog.dart';
 import 'card_dialog.dart';
+import 'cyber_dialog_frame.dart';
 import 'trade_dialog.dart';
 
 /// Watches [pendingAction] and presents modal dialogs.
@@ -21,88 +24,141 @@ class GameDialogHost extends ConsumerStatefulWidget {
 
 class _GameDialogHostState extends ConsumerState<GameDialogHost> {
   PendingAction? _shown;
+  bool _open = false;
 
   @override
   Widget build(BuildContext context) {
     ref.listen(gameControllerProvider, (prev, next) {
       final pending = next.pendingAction;
-      if (pending is PendingNone) {
+      // The auction route stays mounted and rebuilds from the provider.
+      if (pending is PendingAuction && _open) {
         _shown = pending;
         return;
       }
-
-      if (pending is PendingAuction) {
-        final bidder = next.players
-            .where((p) => p.id == pending.currentBidderId)
-            .firstOrNull;
-        if (bidder == null || bidder.isAi) {
-          _shown = pending;
-          return;
-        }
-      } else if (pending is PendingTradeOffer) {
-        final to =
-            next.players.where((p) => p.id == pending.toPlayerId).firstOrNull;
-        if (to == null || to.isAi) {
-          _shown = pending;
-          return;
-        }
-      } else if (next.activePlayer.isAi && pending is! PendingWinner) {
+      if (!_humanFacing(next, pending)) {
         _shown = pending;
         return;
       }
-
+      if (_open) return;
       if (_shown == pending) return;
       _shown = pending;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _present(pending);
-      });
+      _schedule(pending);
     });
 
     return widget.child;
   }
 
+  bool _humanFacing(GameState state, PendingAction pending) {
+    if (pending is PendingNone) return false;
+    if (pending is PendingWinner) return true;
+    if (pending is PendingAuction) {
+      final bidder = state.players
+          .where((p) => p.id == pending.currentBidderId)
+          .firstOrNull;
+      return bidder != null && !bidder.isAi;
+    }
+    if (pending is PendingTradeOffer) {
+      final to = state.players
+          .where((p) => p.id == pending.toPlayerId)
+          .firstOrNull;
+      return to != null && !to.isAi;
+    }
+    return !state.activePlayer.isAi;
+  }
+
+  void _schedule(PendingAction pending) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _open) return;
+      final state = ref.read(gameControllerProvider);
+      final live = state.pendingAction;
+      if (live != pending) {
+        if (_humanFacing(state, live)) _schedule(live);
+        return;
+      }
+      _present(pending);
+    });
+  }
+
   Future<void> _present(PendingAction pending) async {
+    if (_open) return;
     final controller = ref.read(gameControllerProvider.notifier);
     final state = ref.read(gameControllerProvider);
+    if (state.pendingAction != pending || !_humanFacing(state, pending)) {
+      return;
+    }
+    _open = true;
+    try {
+      await _show(controller, state, pending);
+    } finally {
+      _open = false;
+      if (mounted) {
+        final live = ref.read(gameControllerProvider);
+        _shown = live.pendingAction;
+        if (_humanFacing(live, live.pendingAction) &&
+            live.pendingAction != pending) {
+          _schedule(live.pendingAction);
+        }
+      }
+    }
+  }
 
+  Future<void> _show(
+    GameController controller,
+    GameState state,
+    PendingAction pending,
+  ) async {
     await pending.map(
       none: (_) async {},
       buyOffer: (a) async {
+        final stack = state.activePlayer.balance;
         final buy = await showDialog<bool>(
           context: context,
           barrierDismissible: false,
-          builder: (ctx) => Dialog(
-            backgroundColor: Colors.transparent,
-            child: CyberTheme.glass(
-              glowColor: CyberColors.terminalGreen,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('HOLOGRAPHIC DEED'),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Claim «${a.propertyName}» for ${GameRules.credits(a.price)}?',
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('DECLINE'),
-                        ),
+          builder: (ctx) => CyberDialogFrame(
+            glowColor: CyberColors.terminalGreen,
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'HOLOGRAPHIC DEED',
+                  style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                        color: CyberColors.neonCyan,
                       ),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text('ACQUIRE'),
-                        ),
+                ),
+                const SizedBox(height: 8),
+                Text('Claim «${a.propertyName}»?'),
+                const SizedBox(height: 6),
+                Text(
+                  GameRules.credits(a.price),
+                  style: Theme.of(ctx).textTheme.headlineMedium?.copyWith(
+                        color: CyberColors.cyberYellow,
                       ),
-                    ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'YOUR STACK ${GameRules.credits(stack)}',
+                  style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                        color: CyberColors.terminalGreen,
+                      ),
+                ),
+              ],
+            ),
+            actions: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('DECLINE'),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('ACQUIRE'),
+                  ),
+                ),
+              ],
             ),
           ),
         );
@@ -157,23 +213,7 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
         );
         controller.dismissNotice();
       },
-      auction: (a) async {
-        String bidderName = a.currentBidderId;
-        for (final p in state.players) {
-          if (p.id == a.currentBidderId) bidderName = p.name;
-        }
-        final humanTurn = state.players.any(
-          (p) => p.id == a.currentBidderId && !p.isAi,
-        );
-        await showAuctionDialog(
-          context,
-          auction: a,
-          currentBidderName: bidderName,
-          canAct: humanTurn,
-          onBid: controller.auctionBid,
-          onPass: controller.auctionPass,
-        );
-      },
+      auction: (_) => showAuctionDialog(context),
       tradeOffer: (a) async {
         String fromName = a.fromPlayerId;
         String toName = a.toPlayerId;
@@ -186,11 +226,63 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
           offer: a,
           fromName: fromName,
           toName: toName,
+          board: state.board,
         );
         if (ok == true) {
           controller.acceptTrade();
         } else {
           controller.declineTrade();
+        }
+      },
+      claimOffer: (a) async {
+        final board = state.board;
+        final choice = await showDialog<int>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => CyberDialogFrame(
+            glowColor: CyberColors.neonMagenta,
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'EMINENT DOMAIN',
+                  style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                        color: CyberColors.neonMagenta,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Seize one exposed street for 120% of list price.',
+                ),
+                const SizedBox(height: 8),
+                for (final index in a.cellIndexes)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: FilledButton(
+                      onPressed: state.activePlayer.balance >=
+                              Nightfall.buyoutPrice(
+                                board[index].priceOrNull ?? 0,
+                              )
+                          ? () => Navigator.pop(ctx, index)
+                          : null,
+                      child: Text(
+                        '${board[index].name} · '
+                        '${GameRules.credits(Nightfall.buyoutPrice(board[index].priceOrNull ?? 0))}',
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            actions: OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, -1),
+              child: const Text('DECLINE'),
+            ),
+          ),
+        );
+        if (choice != null && choice >= 0) {
+          controller.acceptClaim(choice);
+        } else {
+          controller.declineClaim();
         }
       },
       winner: (a) async {
@@ -199,7 +291,10 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
           barrierDismissible: false,
           builder: (ctx) => AlertDialog(
             title: const Text('PROTOCOL COMPLETE'),
-            content: Text('Controlling interest: ${a.playerName}'),
+            content: Text(
+              'Controlling interest: ${a.playerName}\n'
+              'NET ${GameRules.credits(a.netWorth)}',
+            ),
             actions: [
               FilledButton(
                 onPressed: () {
@@ -213,7 +308,5 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
         );
       },
     );
-
-    _shown = const PendingAction.none();
   }
 }

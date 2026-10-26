@@ -51,7 +51,7 @@ abstract final class BoardGeometry {
     final center = rect.center;
     if (tokensOnCell <= 1) return center;
 
-    const radius = 10.0;
+    final radius = math.min(rect.width, rect.height) * 0.22;
     final angle = (tokenSlot / tokensOnCell) * math.pi * 2;
     return center + Offset(radius * math.cos(angle), radius * math.sin(angle));
   }
