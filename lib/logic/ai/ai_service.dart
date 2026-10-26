@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import '../../models/game_state.dart';
+import '../city_ops.dart';
 import '../../models/pending_action.dart';
 import '../../models/player.dart';
 import '../trade/auction_manager.dart';
@@ -30,6 +31,8 @@ abstract interface class AiGameBridge {
   void aiDrawOverdraft();
   void aiBuyout(int cellIndex);
   void aiBlackout(int cellIndex);
+  void aiPlantVirus(int cellIndex);
+  void aiTakeFixer(String job);
   void aiAcceptClaim(int cellIndex);
   void aiDeclineClaim();
 }
@@ -50,6 +53,11 @@ class AiService {
     if (state.isGameOver) return;
 
     final pending = state.pendingAction;
+    if (pending is PendingCityVote ||
+        pending is PendingHeatCheck ||
+        pending is PendingShortfall) {
+      return;
+    }
     if (pending is PendingAuction) {
       Player? bidder;
       for (final p in state.players) {
@@ -158,7 +166,10 @@ class AiService {
 
         // Hand off to auction/trade loops if needed.
         if (state.pendingAction is PendingAuction ||
-            state.pendingAction is PendingTradeOffer) {
+            state.pendingAction is PendingTradeOffer ||
+            state.pendingAction is PendingCityVote ||
+            state.pendingAction is PendingHeatCheck ||
+            state.pendingAction is PendingShortfall) {
           break;
         }
 
@@ -222,6 +233,12 @@ class AiService {
       return true;
     }
 
+    if (pending is PendingCityVote ||
+        pending is PendingHeatCheck ||
+        pending is PendingShortfall) {
+      return false;
+    }
+
     if (pending is! PendingNone && pending is! PendingWinner) {
       _bridge.aiDismissNotice();
       return true;
@@ -245,6 +262,18 @@ class AiService {
       final buyout = AiDecisionMatrix.preferredBuyout(state: state, ai: player);
       if (buyout != null) {
         _bridge.aiBuyout(buyout);
+        return true;
+      }
+      if (!player.fixerSpent &&
+          player.aiProfile == AiProfile.aggressive &&
+          state.round >= 6 &&
+          player.balance < 500) {
+        _bridge.aiTakeFixer('skim');
+        return true;
+      }
+      final virus = CityOps.virusTarget(state, player);
+      if (virus != null && player.aiProfile != AiProfile.banker) {
+        _bridge.aiPlantVirus(virus);
         return true;
       }
       _bridge.aiRollDice();

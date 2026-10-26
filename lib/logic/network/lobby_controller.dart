@@ -31,6 +31,7 @@ class LobbyState {
     this.phase = LobbyPhase.entry,
     this.nickname = 'NETRUNNER',
     this.tokenColor = TokenColor.blue,
+    this.chrome = Chrome.sandevistan,
     this.roomCode,
     this.localPlayerId,
     this.members = const [],
@@ -42,6 +43,7 @@ class LobbyState {
   final LobbyPhase phase;
   final String nickname;
   final TokenColor tokenColor;
+  final Chrome chrome;
   final String? roomCode;
   final String? localPlayerId;
   final List<PresenceMember> members;
@@ -66,6 +68,7 @@ class LobbyState {
     LobbyPhase? phase,
     String? nickname,
     TokenColor? tokenColor,
+    Chrome? chrome,
     String? roomCode,
     String? localPlayerId,
     List<PresenceMember>? members,
@@ -79,6 +82,7 @@ class LobbyState {
       phase: phase ?? this.phase,
       nickname: nickname ?? this.nickname,
       tokenColor: tokenColor ?? this.tokenColor,
+      chrome: chrome ?? this.chrome,
       roomCode: clearRoom ? null : (roomCode ?? this.roomCode),
       localPlayerId: localPlayerId ?? this.localPlayerId,
       members: members ?? this.members,
@@ -121,6 +125,12 @@ class LobbyController extends StateNotifier<LobbyState> {
 
   void setTokenColor(TokenColor color) {
     state = state.copyWith(tokenColor: color);
+    unawaited(refreshPresenceProfile());
+  }
+
+  void setChrome(Chrome chrome) {
+    state = state.copyWith(chrome: chrome);
+    unawaited(refreshPresenceProfile());
   }
 
   Future<void> createRoom() async {
@@ -161,6 +171,7 @@ class LobbyController extends StateNotifier<LobbyState> {
       id: playerId,
       name: state.nickname,
       tokenColor: state.tokenColor,
+      chrome: state.chrome,
     );
 
     try {
@@ -203,6 +214,7 @@ class LobbyController extends StateNotifier<LobbyState> {
       id: state.localPlayerId!,
       name: state.nickname,
       tokenColor: state.tokenColor,
+      chrome: state.chrome,
     );
     await _realtime.trackPresence(player, ready: state.ready);
   }

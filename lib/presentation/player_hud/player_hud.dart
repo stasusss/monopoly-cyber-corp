@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/constants/street_colors.dart';
 import '../../core/l10n/app_lang.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
@@ -73,6 +74,12 @@ class _PlayerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = stringsOf(context);
+    final groups = <ColorGroup>[];
+    for (final cell in properties) {
+      if (cell is PropertyCell && !groups.contains(cell.colorGroup)) {
+        groups.add(cell.colorGroup);
+      }
+    }
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
@@ -129,6 +136,34 @@ class _PlayerCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (groups.isNotEmpty ||
+                player.heat > 0 ||
+                player.chrome != Chrome.none) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  for (final group in groups)
+                    Container(
+                      width: 8,
+                      height: 8,
+                      margin: const EdgeInsets.only(right: 3),
+                      color: group.swatch,
+                    ),
+                  const Spacer(),
+                  Text(
+                    [
+                      if (player.chrome != Chrome.none)
+                        s.chromeName(player.chrome.name),
+                      if (player.heat > 0) s.heatPips(player.heat),
+                    ].join(' · '),
+                    style: GoogleFonts.shareTechMono(
+                      color: CyberColors.textMuted,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             if (properties.isNotEmpty) ...[
               const SizedBox(height: 6),
               Wrap(

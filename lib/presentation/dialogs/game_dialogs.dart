@@ -6,6 +6,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
 import '../../logic/game_controller.dart';
 import '../../logic/nightfall.dart';
+import '../../models/cell.dart';
 import '../../models/game_state.dart';
 import '../../models/pending_action.dart';
 import '../board/cell_art.dart';
@@ -64,6 +65,12 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
           .where((p) => p.id == pending.toPlayerId)
           .firstOrNull;
       return to != null && !to.isAi;
+    }
+    if (pending is PendingCityVote) {
+      final leader = state.players
+          .where((p) => p.id == pending.leaderId)
+          .firstOrNull;
+      return leader != null && !leader.isAi;
     }
     return !state.activePlayer.isAi;
   }
@@ -180,7 +187,7 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
         }
       },
       rentNotice: (a) async {
-        await showDialog<void>(
+        final dodged = await showDialog<bool>(
           context: context,
           builder: (ctx) {
             final s = stringsOf(ctx);
@@ -195,15 +202,24 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
               ),
             ),
             actions: [
+              if (a.canDodge)
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text(s.dodgeRent),
+                ),
               FilledButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text(s.ack),
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(a.canDodge ? s.payNow : s.ack),
               ),
             ],
           );
           },
         );
-        controller.dismissNotice();
+        if (dodged == true) {
+          controller.dodgeRent();
+        } else {
+          controller.dismissNotice();
+        }
       },
       taxNotice: (a) async {
         await showDialog<void>(
@@ -305,6 +321,76 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
           controller.declineClaim();
         }
       },
+      shortfall: (a) async {
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => _ShortfallDialog(
+            amount: a.amount,
+            label: a.label,
+            onPay: () {
+              Navigator.pop(ctx);
+              controller.settleShortfall();
+            },
+            onFlatline: () {
+              Navigator.pop(ctx);
+              controller.abandonShortfall();
+            },
+          ),
+        );
+      },
+      cityVote: (a) async {
+        final kind = await showDialog<String>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) {
+            final s = stringsOf(ctx);
+            return AlertDialog(
+              title: Text(s.cityTitle),
+              content: Text(s.cityBody(a.round)),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, 'rentSurge'),
+                  child: Text(s.decreeSurge),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, 'maglevFree'),
+                  child: Text(s.decreeMaglev),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, 'taxHoliday'),
+                  child: Text(s.decreeTax),
+                ),
+              ],
+            );
+          },
+        );
+        if (kind != null) controller.chooseDecree(kind);
+      },
+      heatCheck: (a) async {
+        final pay = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) {
+            final s = stringsOf(ctx);
+            return AlertDialog(
+              title: Text(s.heatTitle),
+              content: Text(s.heatBody(GameRules.credits(a.fine))),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(s.sitIce),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: Text(s.payHeat),
+                ),
+              ],
+            );
+          },
+        );
+        controller.resolveHeat(pay: pay ?? false);
+      },
       winner: (a) async {
         await showDialog<void>(
           context: context,
@@ -329,6 +415,80 @@ class _GameDialogHostState extends ConsumerState<GameDialogHost> {
           },
         );
       },
+    );
+  }
+}
+
+class _ShortfallDialog extends ConsumerWidget {
+  const _ShortfallDialog({
+    required this.amount,
+    required this.label,
+    required this.onPay,
+    required this.onFlatline,
+  });
+
+  final int amount;
+  final String label;
+  final VoidCallback onPay;
+  final VoidCallback onFlatline;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = stringsOf(context);
+    final state = ref.watch(gameControllerProvider);
+    final controller = ref.read(gameControllerProvider.notifier);
+    final me = state.activePlayer;
+    final actions = <Widget>[];
+    for (final index in me.propertyIndexes) {
+      final cell = state.cellAt(index);
+      if (cell is PropertyCell && cell.houses > 0) {
+        if (Nightfall.rackSellBlock(
+              state: state,
+              cell: cell,
+              player: me,
+              strings: s,
+            ) ==
+            null) {
+          final refund = Nightfall.nodeRefund(cell.colorGroup, cell.houses);
+          actions.add(
+            TextButton(
+              onPressed: () => controller.sellNode(index),
+              child: Text('${cell.name} · ${s.sellLabel(GameRules.credits(refund))}'),
+            ),
+          );
+        }
+      } else if (cell.isOwnable && !cell.isMortgagedOrFalse) {
+        actions.add(
+          TextButton(
+            onPressed: () => controller.pledgeProperty(index),
+            child: Text(
+              '${cell.name} · ${s.mortgageLabel(GameRules.credits(Nightfall.mortgageValue(cell)))}',
+            ),
+          ),
+        );
+      }
+    }
+    return AlertDialog(
+      title: Text(s.shortfallTitle),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(s.shortfallBody(GameRules.credits(amount), label)),
+            const SizedBox(height: 8),
+            Text(s.yourStack(GameRules.credits(me.balance))),
+            ...actions,
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: onFlatline, child: Text(s.flatline)),
+        FilledButton(
+          onPressed: me.balance >= amount ? onPay : null,
+          child: Text(s.payNow),
+        ),
+      ],
     );
   }
 }

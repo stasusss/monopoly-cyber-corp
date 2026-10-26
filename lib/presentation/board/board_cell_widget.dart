@@ -16,12 +16,14 @@ class BoardCellWidget extends StatelessWidget {
     required this.ownerColor,
     this.onTap,
     this.selected = false,
+    this.virusHops = 0,
   });
 
   final BoardCell cell;
   final Color? ownerColor;
   final VoidCallback? onTap;
   final bool selected;
+  final int virusHops;
 
   static Color accentOf(BoardCell cell) {
     return switch (cell) {
@@ -81,7 +83,7 @@ class BoardCellWidget extends StatelessWidget {
               return Stack(
                 fit: StackFit.expand,
                 children: [
-                  CellArtwork(cell: cell),
+                  CellArtwork(cell: cell, virusHops: virusHops),
                   if (mortgaged) const CustomPaint(painter: _MortgageHatch()),
                   if (property != null)
                     _ColorBand(

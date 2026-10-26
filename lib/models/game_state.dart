@@ -10,6 +10,9 @@ part 'game_state.freezed.dart';
 part 'game_state.g.dart';
 
 /// Phases of a single player turn (state machine).
+/// Table-wide modifier chosen at rounds 10 and 20.
+enum CityDecree { none, rentSurge, maglevFree, taxHoliday }
+
 enum TurnPhase {
   /// Waiting for the active player to roll.
   waitingForRoll,
@@ -85,6 +88,17 @@ abstract class GameState with _$GameState {
 
     /// Next utility bill is 10× dice regardless of how many grids the owner holds.
     @Default(false) bool nextUtilityFlatTen,
+
+    /// Infected cells and how many landings the virus still has.
+    @Default([]) List<int> virusCells,
+    @Default([]) List<int> virusHops,
+
+    @Default(CityDecree.none) CityDecree decree,
+    @Default('') String surgeGroup,
+    @Default(0) int decreeArmedRound,
+
+    /// Street the syndicate seized; auction opens once the landing settles.
+    int? queuedAuctionIndex,
   }) = _GameState;
 
   factory GameState.fromJson(Map<String, dynamic> json) =>

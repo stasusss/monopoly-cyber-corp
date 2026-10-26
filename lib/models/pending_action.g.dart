@@ -37,6 +37,7 @@ _$PendingRentNoticeImpl _$$PendingRentNoticeImplFromJson(
   ownerName: json['ownerName'] as String,
   propertyName: json['propertyName'] as String,
   amount: (json['amount'] as num).toInt(),
+  canDodge: json['canDodge'] as bool? ?? false,
   $type: json['runtimeType'] as String?,
 );
 
@@ -47,6 +48,7 @@ Map<String, dynamic> _$$PendingRentNoticeImplToJson(
   'ownerName': instance.ownerName,
   'propertyName': instance.propertyName,
   'amount': instance.amount,
+  'canDodge': instance.canDodge,
   'runtimeType': instance.$type,
 };
 
@@ -174,3 +176,52 @@ Map<String, dynamic> _$$PendingClaimOfferImplToJson(
   'consumesBuyout': instance.consumesBuyout,
   'runtimeType': instance.$type,
 };
+
+_$PendingShortfallImpl _$$PendingShortfallImplFromJson(
+  Map<String, dynamic> json,
+) => _$PendingShortfallImpl(
+  amount: (json['amount'] as num).toInt(),
+  kind: json['kind'] as String,
+  creditorId: json['creditorId'] as String?,
+  cellIndex: (json['cellIndex'] as num?)?.toInt(),
+  label: json['label'] as String,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$$PendingShortfallImplToJson(
+  _$PendingShortfallImpl instance,
+) => <String, dynamic>{
+  'amount': instance.amount,
+  'kind': instance.kind,
+  'creditorId': instance.creditorId,
+  'cellIndex': instance.cellIndex,
+  'label': instance.label,
+  'runtimeType': instance.$type,
+};
+
+_$PendingCityVoteImpl _$$PendingCityVoteImplFromJson(
+  Map<String, dynamic> json,
+) => _$PendingCityVoteImpl(
+  round: (json['round'] as num).toInt(),
+  leaderId: json['leaderId'] as String,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$$PendingCityVoteImplToJson(
+  _$PendingCityVoteImpl instance,
+) => <String, dynamic>{
+  'round': instance.round,
+  'leaderId': instance.leaderId,
+  'runtimeType': instance.$type,
+};
+
+_$PendingHeatCheckImpl _$$PendingHeatCheckImplFromJson(
+  Map<String, dynamic> json,
+) => _$PendingHeatCheckImpl(
+  fine: (json['fine'] as num).toInt(),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$$PendingHeatCheckImplToJson(
+  _$PendingHeatCheckImpl instance,
+) => <String, dynamic>{'fine': instance.fine, 'runtimeType': instance.$type};

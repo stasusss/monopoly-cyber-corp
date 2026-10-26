@@ -41,6 +41,12 @@ mixin _$Player {
   int get overdraftInstallmentsLeft => throw _privateConstructorUsedError;
   bool get buyoutUsed => throw _privateConstructorUsedError;
   bool get blackoutUsedThisTurn => throw _privateConstructorUsedError;
+  Chrome get chrome => throw _privateConstructorUsedError;
+  bool get chromeSpent => throw _privateConstructorUsedError;
+  bool get chromeArmed => throw _privateConstructorUsedError;
+  bool get fixerSpent => throw _privateConstructorUsedError;
+  int get heat => throw _privateConstructorUsedError;
+  int get virusRound => throw _privateConstructorUsedError;
 
   /// Serializes this Player to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -75,6 +81,12 @@ abstract class $PlayerCopyWith<$Res> {
     int overdraftInstallmentsLeft,
     bool buyoutUsed,
     bool blackoutUsedThisTurn,
+    Chrome chrome,
+    bool chromeSpent,
+    bool chromeArmed,
+    bool fixerSpent,
+    int heat,
+    int virusRound,
   });
 }
 
@@ -111,6 +123,12 @@ class _$PlayerCopyWithImpl<$Res, $Val extends Player>
     Object? overdraftInstallmentsLeft = null,
     Object? buyoutUsed = null,
     Object? blackoutUsedThisTurn = null,
+    Object? chrome = null,
+    Object? chromeSpent = null,
+    Object? chromeArmed = null,
+    Object? fixerSpent = null,
+    Object? heat = null,
+    Object? virusRound = null,
   }) {
     return _then(
       _value.copyWith(
@@ -186,6 +204,30 @@ class _$PlayerCopyWithImpl<$Res, $Val extends Player>
                 ? _value.blackoutUsedThisTurn
                 : blackoutUsedThisTurn // ignore: cast_nullable_to_non_nullable
                       as bool,
+            chrome: null == chrome
+                ? _value.chrome
+                : chrome // ignore: cast_nullable_to_non_nullable
+                      as Chrome,
+            chromeSpent: null == chromeSpent
+                ? _value.chromeSpent
+                : chromeSpent // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            chromeArmed: null == chromeArmed
+                ? _value.chromeArmed
+                : chromeArmed // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            fixerSpent: null == fixerSpent
+                ? _value.fixerSpent
+                : fixerSpent // ignore: cast_nullable_to_non_nullable
+                      as bool,
+            heat: null == heat
+                ? _value.heat
+                : heat // ignore: cast_nullable_to_non_nullable
+                      as int,
+            virusRound: null == virusRound
+                ? _value.virusRound
+                : virusRound // ignore: cast_nullable_to_non_nullable
+                      as int,
           )
           as $Val,
     );
@@ -219,6 +261,12 @@ abstract class _$$PlayerImplCopyWith<$Res> implements $PlayerCopyWith<$Res> {
     int overdraftInstallmentsLeft,
     bool buyoutUsed,
     bool blackoutUsedThisTurn,
+    Chrome chrome,
+    bool chromeSpent,
+    bool chromeArmed,
+    bool fixerSpent,
+    int heat,
+    int virusRound,
   });
 }
 
@@ -254,6 +302,12 @@ class __$$PlayerImplCopyWithImpl<$Res>
     Object? overdraftInstallmentsLeft = null,
     Object? buyoutUsed = null,
     Object? blackoutUsedThisTurn = null,
+    Object? chrome = null,
+    Object? chromeSpent = null,
+    Object? chromeArmed = null,
+    Object? fixerSpent = null,
+    Object? heat = null,
+    Object? virusRound = null,
   }) {
     return _then(
       _$PlayerImpl(
@@ -329,6 +383,30 @@ class __$$PlayerImplCopyWithImpl<$Res>
             ? _value.blackoutUsedThisTurn
             : blackoutUsedThisTurn // ignore: cast_nullable_to_non_nullable
                   as bool,
+        chrome: null == chrome
+            ? _value.chrome
+            : chrome // ignore: cast_nullable_to_non_nullable
+                  as Chrome,
+        chromeSpent: null == chromeSpent
+            ? _value.chromeSpent
+            : chromeSpent // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        chromeArmed: null == chromeArmed
+            ? _value.chromeArmed
+            : chromeArmed // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        fixerSpent: null == fixerSpent
+            ? _value.fixerSpent
+            : fixerSpent // ignore: cast_nullable_to_non_nullable
+                  as bool,
+        heat: null == heat
+            ? _value.heat
+            : heat // ignore: cast_nullable_to_non_nullable
+                  as int,
+        virusRound: null == virusRound
+            ? _value.virusRound
+            : virusRound // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -356,6 +434,12 @@ class _$PlayerImpl extends _Player {
     this.overdraftInstallmentsLeft = 0,
     this.buyoutUsed = false,
     this.blackoutUsedThisTurn = false,
+    this.chrome = Chrome.none,
+    this.chromeSpent = false,
+    this.chromeArmed = false,
+    this.fixerSpent = false,
+    this.heat = 0,
+    this.virusRound = 0,
   }) : _propertyIndexes = propertyIndexes,
        _jailCardSources = jailCardSources,
        super._();
@@ -429,10 +513,28 @@ class _$PlayerImpl extends _Player {
   @override
   @JsonKey()
   final bool blackoutUsedThisTurn;
+  @override
+  @JsonKey()
+  final Chrome chrome;
+  @override
+  @JsonKey()
+  final bool chromeSpent;
+  @override
+  @JsonKey()
+  final bool chromeArmed;
+  @override
+  @JsonKey()
+  final bool fixerSpent;
+  @override
+  @JsonKey()
+  final int heat;
+  @override
+  @JsonKey()
+  final int virusRound;
 
   @override
   String toString() {
-    return 'Player(id: $id, name: $name, tokenColor: $tokenColor, balance: $balance, position: $position, inJail: $inJail, jailTurns: $jailTurns, propertyIndexes: $propertyIndexes, isBankrupt: $isBankrupt, isAi: $isAi, aiProfile: $aiProfile, getOutOfJailCards: $getOutOfJailCards, jailCardSources: $jailCardSources, overdraftUsed: $overdraftUsed, overdraftRemaining: $overdraftRemaining, overdraftInstallmentsLeft: $overdraftInstallmentsLeft, buyoutUsed: $buyoutUsed, blackoutUsedThisTurn: $blackoutUsedThisTurn)';
+    return 'Player(id: $id, name: $name, tokenColor: $tokenColor, balance: $balance, position: $position, inJail: $inJail, jailTurns: $jailTurns, propertyIndexes: $propertyIndexes, isBankrupt: $isBankrupt, isAi: $isAi, aiProfile: $aiProfile, getOutOfJailCards: $getOutOfJailCards, jailCardSources: $jailCardSources, overdraftUsed: $overdraftUsed, overdraftRemaining: $overdraftRemaining, overdraftInstallmentsLeft: $overdraftInstallmentsLeft, buyoutUsed: $buyoutUsed, blackoutUsedThisTurn: $blackoutUsedThisTurn, chrome: $chrome, chromeSpent: $chromeSpent, chromeArmed: $chromeArmed, fixerSpent: $fixerSpent, heat: $heat, virusRound: $virusRound)';
   }
 
   @override
@@ -477,12 +579,22 @@ class _$PlayerImpl extends _Player {
             (identical(other.buyoutUsed, buyoutUsed) ||
                 other.buyoutUsed == buyoutUsed) &&
             (identical(other.blackoutUsedThisTurn, blackoutUsedThisTurn) ||
-                other.blackoutUsedThisTurn == blackoutUsedThisTurn));
+                other.blackoutUsedThisTurn == blackoutUsedThisTurn) &&
+            (identical(other.chrome, chrome) || other.chrome == chrome) &&
+            (identical(other.chromeSpent, chromeSpent) ||
+                other.chromeSpent == chromeSpent) &&
+            (identical(other.chromeArmed, chromeArmed) ||
+                other.chromeArmed == chromeArmed) &&
+            (identical(other.fixerSpent, fixerSpent) ||
+                other.fixerSpent == fixerSpent) &&
+            (identical(other.heat, heat) || other.heat == heat) &&
+            (identical(other.virusRound, virusRound) ||
+                other.virusRound == virusRound));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     id,
     name,
@@ -502,7 +614,13 @@ class _$PlayerImpl extends _Player {
     overdraftInstallmentsLeft,
     buyoutUsed,
     blackoutUsedThisTurn,
-  );
+    chrome,
+    chromeSpent,
+    chromeArmed,
+    fixerSpent,
+    heat,
+    virusRound,
+  ]);
 
   /// Create a copy of Player
   /// with the given fields replaced by the non-null parameter values.
@@ -538,6 +656,12 @@ abstract class _Player extends Player {
     final int overdraftInstallmentsLeft,
     final bool buyoutUsed,
     final bool blackoutUsedThisTurn,
+    final Chrome chrome,
+    final bool chromeSpent,
+    final bool chromeArmed,
+    final bool fixerSpent,
+    final int heat,
+    final int virusRound,
   }) = _$PlayerImpl;
   const _Player._() : super._();
 
@@ -581,6 +705,18 @@ abstract class _Player extends Player {
   bool get buyoutUsed;
   @override
   bool get blackoutUsedThisTurn;
+  @override
+  Chrome get chrome;
+  @override
+  bool get chromeSpent;
+  @override
+  bool get chromeArmed;
+  @override
+  bool get fixerSpent;
+  @override
+  int get heat;
+  @override
+  int get virusRound;
 
   /// Create a copy of Player
   /// with the given fields replaced by the non-null parameter values.

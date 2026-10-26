@@ -35,6 +35,12 @@ PendingAction _$PendingActionFromJson(Map<String, dynamic> json) {
       return PendingWinner.fromJson(json);
     case 'claimOffer':
       return PendingClaimOffer.fromJson(json);
+    case 'shortfall':
+      return PendingShortfall.fromJson(json);
+    case 'cityVote':
+      return PendingCityVote.fromJson(json);
+    case 'heatCheck':
+      return PendingHeatCheck.fromJson(json);
 
     default:
       throw CheckedFromJsonException(
@@ -58,6 +64,7 @@ mixin _$PendingAction {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )
     rentNotice,
     required TResult Function(String playerName, String taxName, int amount)
@@ -86,6 +93,16 @@ mixin _$PendingAction {
     winner,
     required TResult Function(List<int> cellIndexes, bool consumesBuyout)
     claimOffer,
+    required TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )
+    shortfall,
+    required TResult Function(int round, String leaderId) cityVote,
+    required TResult Function(int fine) heatCheck,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
@@ -96,6 +113,7 @@ mixin _$PendingAction {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult? Function(String playerName, String taxName, int amount)? taxNotice,
@@ -121,6 +139,16 @@ mixin _$PendingAction {
     tradeOffer,
     TResult? Function(String playerId, String playerName, int netWorth)? winner,
     TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult? Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult? Function(int round, String leaderId)? cityVote,
+    TResult? Function(int fine)? heatCheck,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
@@ -131,6 +159,7 @@ mixin _$PendingAction {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult Function(String playerName, String taxName, int amount)? taxNotice,
@@ -156,6 +185,16 @@ mixin _$PendingAction {
     tradeOffer,
     TResult Function(String playerId, String playerName, int netWorth)? winner,
     TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult Function(int round, String leaderId)? cityVote,
+    TResult Function(int fine)? heatCheck,
     required TResult orElse(),
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -169,6 +208,9 @@ mixin _$PendingAction {
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
     required TResult Function(PendingClaimOffer value) claimOffer,
+    required TResult Function(PendingShortfall value) shortfall,
+    required TResult Function(PendingCityVote value) cityVote,
+    required TResult Function(PendingHeatCheck value) heatCheck,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
@@ -181,6 +223,9 @@ mixin _$PendingAction {
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
     TResult? Function(PendingClaimOffer value)? claimOffer,
+    TResult? Function(PendingShortfall value)? shortfall,
+    TResult? Function(PendingCityVote value)? cityVote,
+    TResult? Function(PendingHeatCheck value)? heatCheck,
   }) => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
@@ -193,6 +238,9 @@ mixin _$PendingAction {
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
     TResult Function(PendingClaimOffer value)? claimOffer,
+    TResult Function(PendingShortfall value)? shortfall,
+    TResult Function(PendingCityVote value)? cityVote,
+    TResult Function(PendingHeatCheck value)? heatCheck,
     required TResult orElse(),
   }) => throw _privateConstructorUsedError;
 
@@ -280,6 +328,7 @@ class _$PendingNoneImpl implements PendingNone {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )
     rentNotice,
     required TResult Function(String playerName, String taxName, int amount)
@@ -308,6 +357,16 @@ class _$PendingNoneImpl implements PendingNone {
     winner,
     required TResult Function(List<int> cellIndexes, bool consumesBuyout)
     claimOffer,
+    required TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )
+    shortfall,
+    required TResult Function(int round, String leaderId) cityVote,
+    required TResult Function(int fine) heatCheck,
   }) {
     return none();
   }
@@ -322,6 +381,7 @@ class _$PendingNoneImpl implements PendingNone {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult? Function(String playerName, String taxName, int amount)? taxNotice,
@@ -347,6 +407,16 @@ class _$PendingNoneImpl implements PendingNone {
     tradeOffer,
     TResult? Function(String playerId, String playerName, int netWorth)? winner,
     TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult? Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult? Function(int round, String leaderId)? cityVote,
+    TResult? Function(int fine)? heatCheck,
   }) {
     return none?.call();
   }
@@ -361,6 +431,7 @@ class _$PendingNoneImpl implements PendingNone {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult Function(String playerName, String taxName, int amount)? taxNotice,
@@ -386,6 +457,16 @@ class _$PendingNoneImpl implements PendingNone {
     tradeOffer,
     TResult Function(String playerId, String playerName, int netWorth)? winner,
     TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult Function(int round, String leaderId)? cityVote,
+    TResult Function(int fine)? heatCheck,
     required TResult orElse(),
   }) {
     if (none != null) {
@@ -406,6 +487,9 @@ class _$PendingNoneImpl implements PendingNone {
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
     required TResult Function(PendingClaimOffer value) claimOffer,
+    required TResult Function(PendingShortfall value) shortfall,
+    required TResult Function(PendingCityVote value) cityVote,
+    required TResult Function(PendingHeatCheck value) heatCheck,
   }) {
     return none(this);
   }
@@ -422,6 +506,9 @@ class _$PendingNoneImpl implements PendingNone {
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
     TResult? Function(PendingClaimOffer value)? claimOffer,
+    TResult? Function(PendingShortfall value)? shortfall,
+    TResult? Function(PendingCityVote value)? cityVote,
+    TResult? Function(PendingHeatCheck value)? heatCheck,
   }) {
     return none?.call(this);
   }
@@ -438,6 +525,9 @@ class _$PendingNoneImpl implements PendingNone {
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
     TResult Function(PendingClaimOffer value)? claimOffer,
+    TResult Function(PendingShortfall value)? shortfall,
+    TResult Function(PendingCityVote value)? cityVote,
+    TResult Function(PendingHeatCheck value)? heatCheck,
     required TResult orElse(),
   }) {
     if (none != null) {
@@ -572,6 +662,7 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )
     rentNotice,
     required TResult Function(String playerName, String taxName, int amount)
@@ -600,6 +691,16 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
     winner,
     required TResult Function(List<int> cellIndexes, bool consumesBuyout)
     claimOffer,
+    required TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )
+    shortfall,
+    required TResult Function(int round, String leaderId) cityVote,
+    required TResult Function(int fine) heatCheck,
   }) {
     return buyOffer(cellIndex, propertyName, price);
   }
@@ -614,6 +715,7 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult? Function(String playerName, String taxName, int amount)? taxNotice,
@@ -639,6 +741,16 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
     tradeOffer,
     TResult? Function(String playerId, String playerName, int netWorth)? winner,
     TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult? Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult? Function(int round, String leaderId)? cityVote,
+    TResult? Function(int fine)? heatCheck,
   }) {
     return buyOffer?.call(cellIndex, propertyName, price);
   }
@@ -653,6 +765,7 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult Function(String playerName, String taxName, int amount)? taxNotice,
@@ -678,6 +791,16 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
     tradeOffer,
     TResult Function(String playerId, String playerName, int netWorth)? winner,
     TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult Function(int round, String leaderId)? cityVote,
+    TResult Function(int fine)? heatCheck,
     required TResult orElse(),
   }) {
     if (buyOffer != null) {
@@ -698,6 +821,9 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
     required TResult Function(PendingClaimOffer value) claimOffer,
+    required TResult Function(PendingShortfall value) shortfall,
+    required TResult Function(PendingCityVote value) cityVote,
+    required TResult Function(PendingHeatCheck value) heatCheck,
   }) {
     return buyOffer(this);
   }
@@ -714,6 +840,9 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
     TResult? Function(PendingClaimOffer value)? claimOffer,
+    TResult? Function(PendingShortfall value)? shortfall,
+    TResult? Function(PendingCityVote value)? cityVote,
+    TResult? Function(PendingHeatCheck value)? heatCheck,
   }) {
     return buyOffer?.call(this);
   }
@@ -730,6 +859,9 @@ class _$PendingBuyOfferImpl implements PendingBuyOffer {
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
     TResult Function(PendingClaimOffer value)? claimOffer,
+    TResult Function(PendingShortfall value)? shortfall,
+    TResult Function(PendingCityVote value)? cityVote,
+    TResult Function(PendingHeatCheck value)? heatCheck,
     required TResult orElse(),
   }) {
     if (buyOffer != null) {
@@ -777,6 +909,7 @@ abstract class _$$PendingRentNoticeImplCopyWith<$Res> {
     String ownerName,
     String propertyName,
     int amount,
+    bool canDodge,
   });
 }
 
@@ -798,6 +931,7 @@ class __$$PendingRentNoticeImplCopyWithImpl<$Res>
     Object? ownerName = null,
     Object? propertyName = null,
     Object? amount = null,
+    Object? canDodge = null,
   }) {
     return _then(
       _$PendingRentNoticeImpl(
@@ -817,6 +951,10 @@ class __$$PendingRentNoticeImplCopyWithImpl<$Res>
             ? _value.amount
             : amount // ignore: cast_nullable_to_non_nullable
                   as int,
+        canDodge: null == canDodge
+            ? _value.canDodge
+            : canDodge // ignore: cast_nullable_to_non_nullable
+                  as bool,
       ),
     );
   }
@@ -830,6 +968,7 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
     required this.ownerName,
     required this.propertyName,
     required this.amount,
+    this.canDodge = false,
     final String? $type,
   }) : $type = $type ?? 'rentNotice';
 
@@ -844,13 +983,16 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
   final String propertyName;
   @override
   final int amount;
+  @override
+  @JsonKey()
+  final bool canDodge;
 
   @JsonKey(name: 'runtimeType')
   final String $type;
 
   @override
   String toString() {
-    return 'PendingAction.rentNotice(payerName: $payerName, ownerName: $ownerName, propertyName: $propertyName, amount: $amount)';
+    return 'PendingAction.rentNotice(payerName: $payerName, ownerName: $ownerName, propertyName: $propertyName, amount: $amount, canDodge: $canDodge)';
   }
 
   @override
@@ -864,13 +1006,21 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
                 other.ownerName == ownerName) &&
             (identical(other.propertyName, propertyName) ||
                 other.propertyName == propertyName) &&
-            (identical(other.amount, amount) || other.amount == amount));
+            (identical(other.amount, amount) || other.amount == amount) &&
+            (identical(other.canDodge, canDodge) ||
+                other.canDodge == canDodge));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, payerName, ownerName, propertyName, amount);
+  int get hashCode => Object.hash(
+    runtimeType,
+    payerName,
+    ownerName,
+    propertyName,
+    amount,
+    canDodge,
+  );
 
   /// Create a copy of PendingAction
   /// with the given fields replaced by the non-null parameter values.
@@ -894,6 +1044,7 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )
     rentNotice,
     required TResult Function(String playerName, String taxName, int amount)
@@ -922,8 +1073,18 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
     winner,
     required TResult Function(List<int> cellIndexes, bool consumesBuyout)
     claimOffer,
+    required TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )
+    shortfall,
+    required TResult Function(int round, String leaderId) cityVote,
+    required TResult Function(int fine) heatCheck,
   }) {
-    return rentNotice(payerName, ownerName, propertyName, amount);
+    return rentNotice(payerName, ownerName, propertyName, amount, canDodge);
   }
 
   @override
@@ -936,6 +1097,7 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult? Function(String playerName, String taxName, int amount)? taxNotice,
@@ -961,8 +1123,24 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
     tradeOffer,
     TResult? Function(String playerId, String playerName, int netWorth)? winner,
     TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult? Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult? Function(int round, String leaderId)? cityVote,
+    TResult? Function(int fine)? heatCheck,
   }) {
-    return rentNotice?.call(payerName, ownerName, propertyName, amount);
+    return rentNotice?.call(
+      payerName,
+      ownerName,
+      propertyName,
+      amount,
+      canDodge,
+    );
   }
 
   @override
@@ -975,6 +1153,7 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult Function(String playerName, String taxName, int amount)? taxNotice,
@@ -1000,10 +1179,20 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
     tradeOffer,
     TResult Function(String playerId, String playerName, int netWorth)? winner,
     TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult Function(int round, String leaderId)? cityVote,
+    TResult Function(int fine)? heatCheck,
     required TResult orElse(),
   }) {
     if (rentNotice != null) {
-      return rentNotice(payerName, ownerName, propertyName, amount);
+      return rentNotice(payerName, ownerName, propertyName, amount, canDodge);
     }
     return orElse();
   }
@@ -1020,6 +1209,9 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
     required TResult Function(PendingClaimOffer value) claimOffer,
+    required TResult Function(PendingShortfall value) shortfall,
+    required TResult Function(PendingCityVote value) cityVote,
+    required TResult Function(PendingHeatCheck value) heatCheck,
   }) {
     return rentNotice(this);
   }
@@ -1036,6 +1228,9 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
     TResult? Function(PendingClaimOffer value)? claimOffer,
+    TResult? Function(PendingShortfall value)? shortfall,
+    TResult? Function(PendingCityVote value)? cityVote,
+    TResult? Function(PendingHeatCheck value)? heatCheck,
   }) {
     return rentNotice?.call(this);
   }
@@ -1052,6 +1247,9 @@ class _$PendingRentNoticeImpl implements PendingRentNotice {
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
     TResult Function(PendingClaimOffer value)? claimOffer,
+    TResult Function(PendingShortfall value)? shortfall,
+    TResult Function(PendingCityVote value)? cityVote,
+    TResult Function(PendingHeatCheck value)? heatCheck,
     required TResult orElse(),
   }) {
     if (rentNotice != null) {
@@ -1072,6 +1270,7 @@ abstract class PendingRentNotice implements PendingAction {
     required final String ownerName,
     required final String propertyName,
     required final int amount,
+    final bool canDodge,
   }) = _$PendingRentNoticeImpl;
 
   factory PendingRentNotice.fromJson(Map<String, dynamic> json) =
@@ -1081,6 +1280,7 @@ abstract class PendingRentNotice implements PendingAction {
   String get ownerName;
   String get propertyName;
   int get amount;
+  bool get canDodge;
 
   /// Create a copy of PendingAction
   /// with the given fields replaced by the non-null parameter values.
@@ -1201,6 +1401,7 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )
     rentNotice,
     required TResult Function(String playerName, String taxName, int amount)
@@ -1229,6 +1430,16 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
     winner,
     required TResult Function(List<int> cellIndexes, bool consumesBuyout)
     claimOffer,
+    required TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )
+    shortfall,
+    required TResult Function(int round, String leaderId) cityVote,
+    required TResult Function(int fine) heatCheck,
   }) {
     return taxNotice(playerName, taxName, amount);
   }
@@ -1243,6 +1454,7 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult? Function(String playerName, String taxName, int amount)? taxNotice,
@@ -1268,6 +1480,16 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
     tradeOffer,
     TResult? Function(String playerId, String playerName, int netWorth)? winner,
     TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult? Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult? Function(int round, String leaderId)? cityVote,
+    TResult? Function(int fine)? heatCheck,
   }) {
     return taxNotice?.call(playerName, taxName, amount);
   }
@@ -1282,6 +1504,7 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult Function(String playerName, String taxName, int amount)? taxNotice,
@@ -1307,6 +1530,16 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
     tradeOffer,
     TResult Function(String playerId, String playerName, int netWorth)? winner,
     TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult Function(int round, String leaderId)? cityVote,
+    TResult Function(int fine)? heatCheck,
     required TResult orElse(),
   }) {
     if (taxNotice != null) {
@@ -1327,6 +1560,9 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
     required TResult Function(PendingClaimOffer value) claimOffer,
+    required TResult Function(PendingShortfall value) shortfall,
+    required TResult Function(PendingCityVote value) cityVote,
+    required TResult Function(PendingHeatCheck value) heatCheck,
   }) {
     return taxNotice(this);
   }
@@ -1343,6 +1579,9 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
     TResult? Function(PendingClaimOffer value)? claimOffer,
+    TResult? Function(PendingShortfall value)? shortfall,
+    TResult? Function(PendingCityVote value)? cityVote,
+    TResult? Function(PendingHeatCheck value)? heatCheck,
   }) {
     return taxNotice?.call(this);
   }
@@ -1359,6 +1598,9 @@ class _$PendingTaxNoticeImpl implements PendingTaxNotice {
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
     TResult Function(PendingClaimOffer value)? claimOffer,
+    TResult Function(PendingShortfall value)? shortfall,
+    TResult Function(PendingCityVote value)? cityVote,
+    TResult Function(PendingHeatCheck value)? heatCheck,
     required TResult orElse(),
   }) {
     if (taxNotice != null) {
@@ -1494,6 +1736,7 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )
     rentNotice,
     required TResult Function(String playerName, String taxName, int amount)
@@ -1522,6 +1765,16 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
     winner,
     required TResult Function(List<int> cellIndexes, bool consumesBuyout)
     claimOffer,
+    required TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )
+    shortfall,
+    required TResult Function(int round, String leaderId) cityVote,
+    required TResult Function(int fine) heatCheck,
   }) {
     return cardNotice(title, description);
   }
@@ -1536,6 +1789,7 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult? Function(String playerName, String taxName, int amount)? taxNotice,
@@ -1561,6 +1815,16 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
     tradeOffer,
     TResult? Function(String playerId, String playerName, int netWorth)? winner,
     TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult? Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult? Function(int round, String leaderId)? cityVote,
+    TResult? Function(int fine)? heatCheck,
   }) {
     return cardNotice?.call(title, description);
   }
@@ -1575,6 +1839,7 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult Function(String playerName, String taxName, int amount)? taxNotice,
@@ -1600,6 +1865,16 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
     tradeOffer,
     TResult Function(String playerId, String playerName, int netWorth)? winner,
     TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult Function(int round, String leaderId)? cityVote,
+    TResult Function(int fine)? heatCheck,
     required TResult orElse(),
   }) {
     if (cardNotice != null) {
@@ -1620,6 +1895,9 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
     required TResult Function(PendingClaimOffer value) claimOffer,
+    required TResult Function(PendingShortfall value) shortfall,
+    required TResult Function(PendingCityVote value) cityVote,
+    required TResult Function(PendingHeatCheck value) heatCheck,
   }) {
     return cardNotice(this);
   }
@@ -1636,6 +1914,9 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
     TResult? Function(PendingClaimOffer value)? claimOffer,
+    TResult? Function(PendingShortfall value)? shortfall,
+    TResult? Function(PendingCityVote value)? cityVote,
+    TResult? Function(PendingHeatCheck value)? heatCheck,
   }) {
     return cardNotice?.call(this);
   }
@@ -1652,6 +1933,9 @@ class _$PendingCardNoticeImpl implements PendingCardNotice {
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
     TResult Function(PendingClaimOffer value)? claimOffer,
+    TResult Function(PendingShortfall value)? shortfall,
+    TResult Function(PendingCityVote value)? cityVote,
+    TResult Function(PendingHeatCheck value)? heatCheck,
     required TResult orElse(),
   }) {
     if (cardNotice != null) {
@@ -1873,6 +2157,7 @@ class _$PendingAuctionImpl implements PendingAuction {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )
     rentNotice,
     required TResult Function(String playerName, String taxName, int amount)
@@ -1901,6 +2186,16 @@ class _$PendingAuctionImpl implements PendingAuction {
     winner,
     required TResult Function(List<int> cellIndexes, bool consumesBuyout)
     claimOffer,
+    required TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )
+    shortfall,
+    required TResult Function(int round, String leaderId) cityVote,
+    required TResult Function(int fine) heatCheck,
   }) {
     return auction(
       cellIndex,
@@ -1923,6 +2218,7 @@ class _$PendingAuctionImpl implements PendingAuction {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult? Function(String playerName, String taxName, int amount)? taxNotice,
@@ -1948,6 +2244,16 @@ class _$PendingAuctionImpl implements PendingAuction {
     tradeOffer,
     TResult? Function(String playerId, String playerName, int netWorth)? winner,
     TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult? Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult? Function(int round, String leaderId)? cityVote,
+    TResult? Function(int fine)? heatCheck,
   }) {
     return auction?.call(
       cellIndex,
@@ -1970,6 +2276,7 @@ class _$PendingAuctionImpl implements PendingAuction {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult Function(String playerName, String taxName, int amount)? taxNotice,
@@ -1995,6 +2302,16 @@ class _$PendingAuctionImpl implements PendingAuction {
     tradeOffer,
     TResult Function(String playerId, String playerName, int netWorth)? winner,
     TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult Function(int round, String leaderId)? cityVote,
+    TResult Function(int fine)? heatCheck,
     required TResult orElse(),
   }) {
     if (auction != null) {
@@ -2023,6 +2340,9 @@ class _$PendingAuctionImpl implements PendingAuction {
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
     required TResult Function(PendingClaimOffer value) claimOffer,
+    required TResult Function(PendingShortfall value) shortfall,
+    required TResult Function(PendingCityVote value) cityVote,
+    required TResult Function(PendingHeatCheck value) heatCheck,
   }) {
     return auction(this);
   }
@@ -2039,6 +2359,9 @@ class _$PendingAuctionImpl implements PendingAuction {
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
     TResult? Function(PendingClaimOffer value)? claimOffer,
+    TResult? Function(PendingShortfall value)? shortfall,
+    TResult? Function(PendingCityVote value)? cityVote,
+    TResult? Function(PendingHeatCheck value)? heatCheck,
   }) {
     return auction?.call(this);
   }
@@ -2055,6 +2378,9 @@ class _$PendingAuctionImpl implements PendingAuction {
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
     TResult Function(PendingClaimOffer value)? claimOffer,
+    TResult Function(PendingShortfall value)? shortfall,
+    TResult Function(PendingCityVote value)? cityVote,
+    TResult Function(PendingHeatCheck value)? heatCheck,
     required TResult orElse(),
   }) {
     if (auction != null) {
@@ -2275,6 +2601,7 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )
     rentNotice,
     required TResult Function(String playerName, String taxName, int amount)
@@ -2303,6 +2630,16 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
     winner,
     required TResult Function(List<int> cellIndexes, bool consumesBuyout)
     claimOffer,
+    required TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )
+    shortfall,
+    required TResult Function(int round, String leaderId) cityVote,
+    required TResult Function(int fine) heatCheck,
   }) {
     return tradeOffer(
       fromPlayerId,
@@ -2324,6 +2661,7 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult? Function(String playerName, String taxName, int amount)? taxNotice,
@@ -2349,6 +2687,16 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
     tradeOffer,
     TResult? Function(String playerId, String playerName, int netWorth)? winner,
     TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult? Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult? Function(int round, String leaderId)? cityVote,
+    TResult? Function(int fine)? heatCheck,
   }) {
     return tradeOffer?.call(
       fromPlayerId,
@@ -2370,6 +2718,7 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult Function(String playerName, String taxName, int amount)? taxNotice,
@@ -2395,6 +2744,16 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
     tradeOffer,
     TResult Function(String playerId, String playerName, int netWorth)? winner,
     TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult Function(int round, String leaderId)? cityVote,
+    TResult Function(int fine)? heatCheck,
     required TResult orElse(),
   }) {
     if (tradeOffer != null) {
@@ -2422,6 +2781,9 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
     required TResult Function(PendingClaimOffer value) claimOffer,
+    required TResult Function(PendingShortfall value) shortfall,
+    required TResult Function(PendingCityVote value) cityVote,
+    required TResult Function(PendingHeatCheck value) heatCheck,
   }) {
     return tradeOffer(this);
   }
@@ -2438,6 +2800,9 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
     TResult? Function(PendingClaimOffer value)? claimOffer,
+    TResult? Function(PendingShortfall value)? shortfall,
+    TResult? Function(PendingCityVote value)? cityVote,
+    TResult? Function(PendingHeatCheck value)? heatCheck,
   }) {
     return tradeOffer?.call(this);
   }
@@ -2454,6 +2819,9 @@ class _$PendingTradeOfferImpl implements PendingTradeOffer {
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
     TResult Function(PendingClaimOffer value)? claimOffer,
+    TResult Function(PendingShortfall value)? shortfall,
+    TResult Function(PendingCityVote value)? cityVote,
+    TResult Function(PendingHeatCheck value)? heatCheck,
     required TResult orElse(),
   }) {
     if (tradeOffer != null) {
@@ -2607,6 +2975,7 @@ class _$PendingWinnerImpl implements PendingWinner {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )
     rentNotice,
     required TResult Function(String playerName, String taxName, int amount)
@@ -2635,6 +3004,16 @@ class _$PendingWinnerImpl implements PendingWinner {
     winner,
     required TResult Function(List<int> cellIndexes, bool consumesBuyout)
     claimOffer,
+    required TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )
+    shortfall,
+    required TResult Function(int round, String leaderId) cityVote,
+    required TResult Function(int fine) heatCheck,
   }) {
     return winner(playerId, playerName, netWorth);
   }
@@ -2649,6 +3028,7 @@ class _$PendingWinnerImpl implements PendingWinner {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult? Function(String playerName, String taxName, int amount)? taxNotice,
@@ -2674,6 +3054,16 @@ class _$PendingWinnerImpl implements PendingWinner {
     tradeOffer,
     TResult? Function(String playerId, String playerName, int netWorth)? winner,
     TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult? Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult? Function(int round, String leaderId)? cityVote,
+    TResult? Function(int fine)? heatCheck,
   }) {
     return winner?.call(playerId, playerName, netWorth);
   }
@@ -2688,6 +3078,7 @@ class _$PendingWinnerImpl implements PendingWinner {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult Function(String playerName, String taxName, int amount)? taxNotice,
@@ -2713,6 +3104,16 @@ class _$PendingWinnerImpl implements PendingWinner {
     tradeOffer,
     TResult Function(String playerId, String playerName, int netWorth)? winner,
     TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult Function(int round, String leaderId)? cityVote,
+    TResult Function(int fine)? heatCheck,
     required TResult orElse(),
   }) {
     if (winner != null) {
@@ -2733,6 +3134,9 @@ class _$PendingWinnerImpl implements PendingWinner {
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
     required TResult Function(PendingClaimOffer value) claimOffer,
+    required TResult Function(PendingShortfall value) shortfall,
+    required TResult Function(PendingCityVote value) cityVote,
+    required TResult Function(PendingHeatCheck value) heatCheck,
   }) {
     return winner(this);
   }
@@ -2749,6 +3153,9 @@ class _$PendingWinnerImpl implements PendingWinner {
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
     TResult? Function(PendingClaimOffer value)? claimOffer,
+    TResult? Function(PendingShortfall value)? shortfall,
+    TResult? Function(PendingCityVote value)? cityVote,
+    TResult? Function(PendingHeatCheck value)? heatCheck,
   }) {
     return winner?.call(this);
   }
@@ -2765,6 +3172,9 @@ class _$PendingWinnerImpl implements PendingWinner {
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
     TResult Function(PendingClaimOffer value)? claimOffer,
+    TResult Function(PendingShortfall value)? shortfall,
+    TResult Function(PendingCityVote value)? cityVote,
+    TResult Function(PendingHeatCheck value)? heatCheck,
     required TResult orElse(),
   }) {
     if (winner != null) {
@@ -2914,6 +3324,7 @@ class _$PendingClaimOfferImpl implements PendingClaimOffer {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )
     rentNotice,
     required TResult Function(String playerName, String taxName, int amount)
@@ -2942,6 +3353,16 @@ class _$PendingClaimOfferImpl implements PendingClaimOffer {
     winner,
     required TResult Function(List<int> cellIndexes, bool consumesBuyout)
     claimOffer,
+    required TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )
+    shortfall,
+    required TResult Function(int round, String leaderId) cityVote,
+    required TResult Function(int fine) heatCheck,
   }) {
     return claimOffer(cellIndexes, consumesBuyout);
   }
@@ -2956,6 +3377,7 @@ class _$PendingClaimOfferImpl implements PendingClaimOffer {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult? Function(String playerName, String taxName, int amount)? taxNotice,
@@ -2981,6 +3403,16 @@ class _$PendingClaimOfferImpl implements PendingClaimOffer {
     tradeOffer,
     TResult? Function(String playerId, String playerName, int netWorth)? winner,
     TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult? Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult? Function(int round, String leaderId)? cityVote,
+    TResult? Function(int fine)? heatCheck,
   }) {
     return claimOffer?.call(cellIndexes, consumesBuyout);
   }
@@ -2995,6 +3427,7 @@ class _$PendingClaimOfferImpl implements PendingClaimOffer {
       String ownerName,
       String propertyName,
       int amount,
+      bool canDodge,
     )?
     rentNotice,
     TResult Function(String playerName, String taxName, int amount)? taxNotice,
@@ -3020,6 +3453,16 @@ class _$PendingClaimOfferImpl implements PendingClaimOffer {
     tradeOffer,
     TResult Function(String playerId, String playerName, int netWorth)? winner,
     TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult Function(int round, String leaderId)? cityVote,
+    TResult Function(int fine)? heatCheck,
     required TResult orElse(),
   }) {
     if (claimOffer != null) {
@@ -3040,6 +3483,9 @@ class _$PendingClaimOfferImpl implements PendingClaimOffer {
     required TResult Function(PendingTradeOffer value) tradeOffer,
     required TResult Function(PendingWinner value) winner,
     required TResult Function(PendingClaimOffer value) claimOffer,
+    required TResult Function(PendingShortfall value) shortfall,
+    required TResult Function(PendingCityVote value) cityVote,
+    required TResult Function(PendingHeatCheck value) heatCheck,
   }) {
     return claimOffer(this);
   }
@@ -3056,6 +3502,9 @@ class _$PendingClaimOfferImpl implements PendingClaimOffer {
     TResult? Function(PendingTradeOffer value)? tradeOffer,
     TResult? Function(PendingWinner value)? winner,
     TResult? Function(PendingClaimOffer value)? claimOffer,
+    TResult? Function(PendingShortfall value)? shortfall,
+    TResult? Function(PendingCityVote value)? cityVote,
+    TResult? Function(PendingHeatCheck value)? heatCheck,
   }) {
     return claimOffer?.call(this);
   }
@@ -3072,6 +3521,9 @@ class _$PendingClaimOfferImpl implements PendingClaimOffer {
     TResult Function(PendingTradeOffer value)? tradeOffer,
     TResult Function(PendingWinner value)? winner,
     TResult Function(PendingClaimOffer value)? claimOffer,
+    TResult Function(PendingShortfall value)? shortfall,
+    TResult Function(PendingCityVote value)? cityVote,
+    TResult Function(PendingHeatCheck value)? heatCheck,
     required TResult orElse(),
   }) {
     if (claimOffer != null) {
@@ -3102,5 +3554,1034 @@ abstract class PendingClaimOffer implements PendingAction {
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$PendingClaimOfferImplCopyWith<_$PendingClaimOfferImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$PendingShortfallImplCopyWith<$Res> {
+  factory _$$PendingShortfallImplCopyWith(
+    _$PendingShortfallImpl value,
+    $Res Function(_$PendingShortfallImpl) then,
+  ) = __$$PendingShortfallImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({
+    int amount,
+    String kind,
+    String? creditorId,
+    int? cellIndex,
+    String label,
+  });
+}
+
+/// @nodoc
+class __$$PendingShortfallImplCopyWithImpl<$Res>
+    extends _$PendingActionCopyWithImpl<$Res, _$PendingShortfallImpl>
+    implements _$$PendingShortfallImplCopyWith<$Res> {
+  __$$PendingShortfallImplCopyWithImpl(
+    _$PendingShortfallImpl _value,
+    $Res Function(_$PendingShortfallImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of PendingAction
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? amount = null,
+    Object? kind = null,
+    Object? creditorId = freezed,
+    Object? cellIndex = freezed,
+    Object? label = null,
+  }) {
+    return _then(
+      _$PendingShortfallImpl(
+        amount: null == amount
+            ? _value.amount
+            : amount // ignore: cast_nullable_to_non_nullable
+                  as int,
+        kind: null == kind
+            ? _value.kind
+            : kind // ignore: cast_nullable_to_non_nullable
+                  as String,
+        creditorId: freezed == creditorId
+            ? _value.creditorId
+            : creditorId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        cellIndex: freezed == cellIndex
+            ? _value.cellIndex
+            : cellIndex // ignore: cast_nullable_to_non_nullable
+                  as int?,
+        label: null == label
+            ? _value.label
+            : label // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$PendingShortfallImpl implements PendingShortfall {
+  const _$PendingShortfallImpl({
+    required this.amount,
+    required this.kind,
+    this.creditorId,
+    this.cellIndex,
+    required this.label,
+    final String? $type,
+  }) : $type = $type ?? 'shortfall';
+
+  factory _$PendingShortfallImpl.fromJson(Map<String, dynamic> json) =>
+      _$$PendingShortfallImplFromJson(json);
+
+  @override
+  final int amount;
+  @override
+  final String kind;
+  @override
+  final String? creditorId;
+  @override
+  final int? cellIndex;
+  @override
+  final String label;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  @override
+  String toString() {
+    return 'PendingAction.shortfall(amount: $amount, kind: $kind, creditorId: $creditorId, cellIndex: $cellIndex, label: $label)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$PendingShortfallImpl &&
+            (identical(other.amount, amount) || other.amount == amount) &&
+            (identical(other.kind, kind) || other.kind == kind) &&
+            (identical(other.creditorId, creditorId) ||
+                other.creditorId == creditorId) &&
+            (identical(other.cellIndex, cellIndex) ||
+                other.cellIndex == cellIndex) &&
+            (identical(other.label, label) || other.label == label));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, amount, kind, creditorId, cellIndex, label);
+
+  /// Create a copy of PendingAction
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$PendingShortfallImplCopyWith<_$PendingShortfallImpl> get copyWith =>
+      __$$PendingShortfallImplCopyWithImpl<_$PendingShortfallImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() none,
+    required TResult Function(int cellIndex, String propertyName, int price)
+    buyOffer,
+    required TResult Function(
+      String payerName,
+      String ownerName,
+      String propertyName,
+      int amount,
+      bool canDodge,
+    )
+    rentNotice,
+    required TResult Function(String playerName, String taxName, int amount)
+    taxNotice,
+    required TResult Function(String title, String description) cardNotice,
+    required TResult Function(
+      int cellIndex,
+      String propertyName,
+      int highestBid,
+      String? highestBidderId,
+      String currentBidderId,
+      List<String> participantIds,
+      List<String> passedIds,
+    )
+    auction,
+    required TResult Function(
+      String fromPlayerId,
+      String toPlayerId,
+      int offerCash,
+      int requestCash,
+      List<int> offerProperties,
+      List<int> requestProperties,
+    )
+    tradeOffer,
+    required TResult Function(String playerId, String playerName, int netWorth)
+    winner,
+    required TResult Function(List<int> cellIndexes, bool consumesBuyout)
+    claimOffer,
+    required TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )
+    shortfall,
+    required TResult Function(int round, String leaderId) cityVote,
+    required TResult Function(int fine) heatCheck,
+  }) {
+    return shortfall(amount, kind, creditorId, cellIndex, label);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? none,
+    TResult? Function(int cellIndex, String propertyName, int price)? buyOffer,
+    TResult? Function(
+      String payerName,
+      String ownerName,
+      String propertyName,
+      int amount,
+      bool canDodge,
+    )?
+    rentNotice,
+    TResult? Function(String playerName, String taxName, int amount)? taxNotice,
+    TResult? Function(String title, String description)? cardNotice,
+    TResult? Function(
+      int cellIndex,
+      String propertyName,
+      int highestBid,
+      String? highestBidderId,
+      String currentBidderId,
+      List<String> participantIds,
+      List<String> passedIds,
+    )?
+    auction,
+    TResult? Function(
+      String fromPlayerId,
+      String toPlayerId,
+      int offerCash,
+      int requestCash,
+      List<int> offerProperties,
+      List<int> requestProperties,
+    )?
+    tradeOffer,
+    TResult? Function(String playerId, String playerName, int netWorth)? winner,
+    TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult? Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult? Function(int round, String leaderId)? cityVote,
+    TResult? Function(int fine)? heatCheck,
+  }) {
+    return shortfall?.call(amount, kind, creditorId, cellIndex, label);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? none,
+    TResult Function(int cellIndex, String propertyName, int price)? buyOffer,
+    TResult Function(
+      String payerName,
+      String ownerName,
+      String propertyName,
+      int amount,
+      bool canDodge,
+    )?
+    rentNotice,
+    TResult Function(String playerName, String taxName, int amount)? taxNotice,
+    TResult Function(String title, String description)? cardNotice,
+    TResult Function(
+      int cellIndex,
+      String propertyName,
+      int highestBid,
+      String? highestBidderId,
+      String currentBidderId,
+      List<String> participantIds,
+      List<String> passedIds,
+    )?
+    auction,
+    TResult Function(
+      String fromPlayerId,
+      String toPlayerId,
+      int offerCash,
+      int requestCash,
+      List<int> offerProperties,
+      List<int> requestProperties,
+    )?
+    tradeOffer,
+    TResult Function(String playerId, String playerName, int netWorth)? winner,
+    TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult Function(int round, String leaderId)? cityVote,
+    TResult Function(int fine)? heatCheck,
+    required TResult orElse(),
+  }) {
+    if (shortfall != null) {
+      return shortfall(amount, kind, creditorId, cellIndex, label);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(PendingNone value) none,
+    required TResult Function(PendingBuyOffer value) buyOffer,
+    required TResult Function(PendingRentNotice value) rentNotice,
+    required TResult Function(PendingTaxNotice value) taxNotice,
+    required TResult Function(PendingCardNotice value) cardNotice,
+    required TResult Function(PendingAuction value) auction,
+    required TResult Function(PendingTradeOffer value) tradeOffer,
+    required TResult Function(PendingWinner value) winner,
+    required TResult Function(PendingClaimOffer value) claimOffer,
+    required TResult Function(PendingShortfall value) shortfall,
+    required TResult Function(PendingCityVote value) cityVote,
+    required TResult Function(PendingHeatCheck value) heatCheck,
+  }) {
+    return shortfall(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(PendingNone value)? none,
+    TResult? Function(PendingBuyOffer value)? buyOffer,
+    TResult? Function(PendingRentNotice value)? rentNotice,
+    TResult? Function(PendingTaxNotice value)? taxNotice,
+    TResult? Function(PendingCardNotice value)? cardNotice,
+    TResult? Function(PendingAuction value)? auction,
+    TResult? Function(PendingTradeOffer value)? tradeOffer,
+    TResult? Function(PendingWinner value)? winner,
+    TResult? Function(PendingClaimOffer value)? claimOffer,
+    TResult? Function(PendingShortfall value)? shortfall,
+    TResult? Function(PendingCityVote value)? cityVote,
+    TResult? Function(PendingHeatCheck value)? heatCheck,
+  }) {
+    return shortfall?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(PendingNone value)? none,
+    TResult Function(PendingBuyOffer value)? buyOffer,
+    TResult Function(PendingRentNotice value)? rentNotice,
+    TResult Function(PendingTaxNotice value)? taxNotice,
+    TResult Function(PendingCardNotice value)? cardNotice,
+    TResult Function(PendingAuction value)? auction,
+    TResult Function(PendingTradeOffer value)? tradeOffer,
+    TResult Function(PendingWinner value)? winner,
+    TResult Function(PendingClaimOffer value)? claimOffer,
+    TResult Function(PendingShortfall value)? shortfall,
+    TResult Function(PendingCityVote value)? cityVote,
+    TResult Function(PendingHeatCheck value)? heatCheck,
+    required TResult orElse(),
+  }) {
+    if (shortfall != null) {
+      return shortfall(this);
+    }
+    return orElse();
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$PendingShortfallImplToJson(this);
+  }
+}
+
+abstract class PendingShortfall implements PendingAction {
+  const factory PendingShortfall({
+    required final int amount,
+    required final String kind,
+    final String? creditorId,
+    final int? cellIndex,
+    required final String label,
+  }) = _$PendingShortfallImpl;
+
+  factory PendingShortfall.fromJson(Map<String, dynamic> json) =
+      _$PendingShortfallImpl.fromJson;
+
+  int get amount;
+  String get kind;
+  String? get creditorId;
+  int? get cellIndex;
+  String get label;
+
+  /// Create a copy of PendingAction
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$PendingShortfallImplCopyWith<_$PendingShortfallImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$PendingCityVoteImplCopyWith<$Res> {
+  factory _$$PendingCityVoteImplCopyWith(
+    _$PendingCityVoteImpl value,
+    $Res Function(_$PendingCityVoteImpl) then,
+  ) = __$$PendingCityVoteImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({int round, String leaderId});
+}
+
+/// @nodoc
+class __$$PendingCityVoteImplCopyWithImpl<$Res>
+    extends _$PendingActionCopyWithImpl<$Res, _$PendingCityVoteImpl>
+    implements _$$PendingCityVoteImplCopyWith<$Res> {
+  __$$PendingCityVoteImplCopyWithImpl(
+    _$PendingCityVoteImpl _value,
+    $Res Function(_$PendingCityVoteImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of PendingAction
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? round = null, Object? leaderId = null}) {
+    return _then(
+      _$PendingCityVoteImpl(
+        round: null == round
+            ? _value.round
+            : round // ignore: cast_nullable_to_non_nullable
+                  as int,
+        leaderId: null == leaderId
+            ? _value.leaderId
+            : leaderId // ignore: cast_nullable_to_non_nullable
+                  as String,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$PendingCityVoteImpl implements PendingCityVote {
+  const _$PendingCityVoteImpl({
+    required this.round,
+    required this.leaderId,
+    final String? $type,
+  }) : $type = $type ?? 'cityVote';
+
+  factory _$PendingCityVoteImpl.fromJson(Map<String, dynamic> json) =>
+      _$$PendingCityVoteImplFromJson(json);
+
+  @override
+  final int round;
+  @override
+  final String leaderId;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  @override
+  String toString() {
+    return 'PendingAction.cityVote(round: $round, leaderId: $leaderId)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$PendingCityVoteImpl &&
+            (identical(other.round, round) || other.round == round) &&
+            (identical(other.leaderId, leaderId) ||
+                other.leaderId == leaderId));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, round, leaderId);
+
+  /// Create a copy of PendingAction
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$PendingCityVoteImplCopyWith<_$PendingCityVoteImpl> get copyWith =>
+      __$$PendingCityVoteImplCopyWithImpl<_$PendingCityVoteImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() none,
+    required TResult Function(int cellIndex, String propertyName, int price)
+    buyOffer,
+    required TResult Function(
+      String payerName,
+      String ownerName,
+      String propertyName,
+      int amount,
+      bool canDodge,
+    )
+    rentNotice,
+    required TResult Function(String playerName, String taxName, int amount)
+    taxNotice,
+    required TResult Function(String title, String description) cardNotice,
+    required TResult Function(
+      int cellIndex,
+      String propertyName,
+      int highestBid,
+      String? highestBidderId,
+      String currentBidderId,
+      List<String> participantIds,
+      List<String> passedIds,
+    )
+    auction,
+    required TResult Function(
+      String fromPlayerId,
+      String toPlayerId,
+      int offerCash,
+      int requestCash,
+      List<int> offerProperties,
+      List<int> requestProperties,
+    )
+    tradeOffer,
+    required TResult Function(String playerId, String playerName, int netWorth)
+    winner,
+    required TResult Function(List<int> cellIndexes, bool consumesBuyout)
+    claimOffer,
+    required TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )
+    shortfall,
+    required TResult Function(int round, String leaderId) cityVote,
+    required TResult Function(int fine) heatCheck,
+  }) {
+    return cityVote(round, leaderId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? none,
+    TResult? Function(int cellIndex, String propertyName, int price)? buyOffer,
+    TResult? Function(
+      String payerName,
+      String ownerName,
+      String propertyName,
+      int amount,
+      bool canDodge,
+    )?
+    rentNotice,
+    TResult? Function(String playerName, String taxName, int amount)? taxNotice,
+    TResult? Function(String title, String description)? cardNotice,
+    TResult? Function(
+      int cellIndex,
+      String propertyName,
+      int highestBid,
+      String? highestBidderId,
+      String currentBidderId,
+      List<String> participantIds,
+      List<String> passedIds,
+    )?
+    auction,
+    TResult? Function(
+      String fromPlayerId,
+      String toPlayerId,
+      int offerCash,
+      int requestCash,
+      List<int> offerProperties,
+      List<int> requestProperties,
+    )?
+    tradeOffer,
+    TResult? Function(String playerId, String playerName, int netWorth)? winner,
+    TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult? Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult? Function(int round, String leaderId)? cityVote,
+    TResult? Function(int fine)? heatCheck,
+  }) {
+    return cityVote?.call(round, leaderId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? none,
+    TResult Function(int cellIndex, String propertyName, int price)? buyOffer,
+    TResult Function(
+      String payerName,
+      String ownerName,
+      String propertyName,
+      int amount,
+      bool canDodge,
+    )?
+    rentNotice,
+    TResult Function(String playerName, String taxName, int amount)? taxNotice,
+    TResult Function(String title, String description)? cardNotice,
+    TResult Function(
+      int cellIndex,
+      String propertyName,
+      int highestBid,
+      String? highestBidderId,
+      String currentBidderId,
+      List<String> participantIds,
+      List<String> passedIds,
+    )?
+    auction,
+    TResult Function(
+      String fromPlayerId,
+      String toPlayerId,
+      int offerCash,
+      int requestCash,
+      List<int> offerProperties,
+      List<int> requestProperties,
+    )?
+    tradeOffer,
+    TResult Function(String playerId, String playerName, int netWorth)? winner,
+    TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult Function(int round, String leaderId)? cityVote,
+    TResult Function(int fine)? heatCheck,
+    required TResult orElse(),
+  }) {
+    if (cityVote != null) {
+      return cityVote(round, leaderId);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(PendingNone value) none,
+    required TResult Function(PendingBuyOffer value) buyOffer,
+    required TResult Function(PendingRentNotice value) rentNotice,
+    required TResult Function(PendingTaxNotice value) taxNotice,
+    required TResult Function(PendingCardNotice value) cardNotice,
+    required TResult Function(PendingAuction value) auction,
+    required TResult Function(PendingTradeOffer value) tradeOffer,
+    required TResult Function(PendingWinner value) winner,
+    required TResult Function(PendingClaimOffer value) claimOffer,
+    required TResult Function(PendingShortfall value) shortfall,
+    required TResult Function(PendingCityVote value) cityVote,
+    required TResult Function(PendingHeatCheck value) heatCheck,
+  }) {
+    return cityVote(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(PendingNone value)? none,
+    TResult? Function(PendingBuyOffer value)? buyOffer,
+    TResult? Function(PendingRentNotice value)? rentNotice,
+    TResult? Function(PendingTaxNotice value)? taxNotice,
+    TResult? Function(PendingCardNotice value)? cardNotice,
+    TResult? Function(PendingAuction value)? auction,
+    TResult? Function(PendingTradeOffer value)? tradeOffer,
+    TResult? Function(PendingWinner value)? winner,
+    TResult? Function(PendingClaimOffer value)? claimOffer,
+    TResult? Function(PendingShortfall value)? shortfall,
+    TResult? Function(PendingCityVote value)? cityVote,
+    TResult? Function(PendingHeatCheck value)? heatCheck,
+  }) {
+    return cityVote?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(PendingNone value)? none,
+    TResult Function(PendingBuyOffer value)? buyOffer,
+    TResult Function(PendingRentNotice value)? rentNotice,
+    TResult Function(PendingTaxNotice value)? taxNotice,
+    TResult Function(PendingCardNotice value)? cardNotice,
+    TResult Function(PendingAuction value)? auction,
+    TResult Function(PendingTradeOffer value)? tradeOffer,
+    TResult Function(PendingWinner value)? winner,
+    TResult Function(PendingClaimOffer value)? claimOffer,
+    TResult Function(PendingShortfall value)? shortfall,
+    TResult Function(PendingCityVote value)? cityVote,
+    TResult Function(PendingHeatCheck value)? heatCheck,
+    required TResult orElse(),
+  }) {
+    if (cityVote != null) {
+      return cityVote(this);
+    }
+    return orElse();
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$PendingCityVoteImplToJson(this);
+  }
+}
+
+abstract class PendingCityVote implements PendingAction {
+  const factory PendingCityVote({
+    required final int round,
+    required final String leaderId,
+  }) = _$PendingCityVoteImpl;
+
+  factory PendingCityVote.fromJson(Map<String, dynamic> json) =
+      _$PendingCityVoteImpl.fromJson;
+
+  int get round;
+  String get leaderId;
+
+  /// Create a copy of PendingAction
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$PendingCityVoteImplCopyWith<_$PendingCityVoteImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$PendingHeatCheckImplCopyWith<$Res> {
+  factory _$$PendingHeatCheckImplCopyWith(
+    _$PendingHeatCheckImpl value,
+    $Res Function(_$PendingHeatCheckImpl) then,
+  ) = __$$PendingHeatCheckImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({int fine});
+}
+
+/// @nodoc
+class __$$PendingHeatCheckImplCopyWithImpl<$Res>
+    extends _$PendingActionCopyWithImpl<$Res, _$PendingHeatCheckImpl>
+    implements _$$PendingHeatCheckImplCopyWith<$Res> {
+  __$$PendingHeatCheckImplCopyWithImpl(
+    _$PendingHeatCheckImpl _value,
+    $Res Function(_$PendingHeatCheckImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of PendingAction
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({Object? fine = null}) {
+    return _then(
+      _$PendingHeatCheckImpl(
+        fine: null == fine
+            ? _value.fine
+            : fine // ignore: cast_nullable_to_non_nullable
+                  as int,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$PendingHeatCheckImpl implements PendingHeatCheck {
+  const _$PendingHeatCheckImpl({required this.fine, final String? $type})
+    : $type = $type ?? 'heatCheck';
+
+  factory _$PendingHeatCheckImpl.fromJson(Map<String, dynamic> json) =>
+      _$$PendingHeatCheckImplFromJson(json);
+
+  @override
+  final int fine;
+
+  @JsonKey(name: 'runtimeType')
+  final String $type;
+
+  @override
+  String toString() {
+    return 'PendingAction.heatCheck(fine: $fine)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$PendingHeatCheckImpl &&
+            (identical(other.fine, fine) || other.fine == fine));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, fine);
+
+  /// Create a copy of PendingAction
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$PendingHeatCheckImplCopyWith<_$PendingHeatCheckImpl> get copyWith =>
+      __$$PendingHeatCheckImplCopyWithImpl<_$PendingHeatCheckImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function() none,
+    required TResult Function(int cellIndex, String propertyName, int price)
+    buyOffer,
+    required TResult Function(
+      String payerName,
+      String ownerName,
+      String propertyName,
+      int amount,
+      bool canDodge,
+    )
+    rentNotice,
+    required TResult Function(String playerName, String taxName, int amount)
+    taxNotice,
+    required TResult Function(String title, String description) cardNotice,
+    required TResult Function(
+      int cellIndex,
+      String propertyName,
+      int highestBid,
+      String? highestBidderId,
+      String currentBidderId,
+      List<String> participantIds,
+      List<String> passedIds,
+    )
+    auction,
+    required TResult Function(
+      String fromPlayerId,
+      String toPlayerId,
+      int offerCash,
+      int requestCash,
+      List<int> offerProperties,
+      List<int> requestProperties,
+    )
+    tradeOffer,
+    required TResult Function(String playerId, String playerName, int netWorth)
+    winner,
+    required TResult Function(List<int> cellIndexes, bool consumesBuyout)
+    claimOffer,
+    required TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )
+    shortfall,
+    required TResult Function(int round, String leaderId) cityVote,
+    required TResult Function(int fine) heatCheck,
+  }) {
+    return heatCheck(fine);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function()? none,
+    TResult? Function(int cellIndex, String propertyName, int price)? buyOffer,
+    TResult? Function(
+      String payerName,
+      String ownerName,
+      String propertyName,
+      int amount,
+      bool canDodge,
+    )?
+    rentNotice,
+    TResult? Function(String playerName, String taxName, int amount)? taxNotice,
+    TResult? Function(String title, String description)? cardNotice,
+    TResult? Function(
+      int cellIndex,
+      String propertyName,
+      int highestBid,
+      String? highestBidderId,
+      String currentBidderId,
+      List<String> participantIds,
+      List<String> passedIds,
+    )?
+    auction,
+    TResult? Function(
+      String fromPlayerId,
+      String toPlayerId,
+      int offerCash,
+      int requestCash,
+      List<int> offerProperties,
+      List<int> requestProperties,
+    )?
+    tradeOffer,
+    TResult? Function(String playerId, String playerName, int netWorth)? winner,
+    TResult? Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult? Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult? Function(int round, String leaderId)? cityVote,
+    TResult? Function(int fine)? heatCheck,
+  }) {
+    return heatCheck?.call(fine);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function()? none,
+    TResult Function(int cellIndex, String propertyName, int price)? buyOffer,
+    TResult Function(
+      String payerName,
+      String ownerName,
+      String propertyName,
+      int amount,
+      bool canDodge,
+    )?
+    rentNotice,
+    TResult Function(String playerName, String taxName, int amount)? taxNotice,
+    TResult Function(String title, String description)? cardNotice,
+    TResult Function(
+      int cellIndex,
+      String propertyName,
+      int highestBid,
+      String? highestBidderId,
+      String currentBidderId,
+      List<String> participantIds,
+      List<String> passedIds,
+    )?
+    auction,
+    TResult Function(
+      String fromPlayerId,
+      String toPlayerId,
+      int offerCash,
+      int requestCash,
+      List<int> offerProperties,
+      List<int> requestProperties,
+    )?
+    tradeOffer,
+    TResult Function(String playerId, String playerName, int netWorth)? winner,
+    TResult Function(List<int> cellIndexes, bool consumesBuyout)? claimOffer,
+    TResult Function(
+      int amount,
+      String kind,
+      String? creditorId,
+      int? cellIndex,
+      String label,
+    )?
+    shortfall,
+    TResult Function(int round, String leaderId)? cityVote,
+    TResult Function(int fine)? heatCheck,
+    required TResult orElse(),
+  }) {
+    if (heatCheck != null) {
+      return heatCheck(fine);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(PendingNone value) none,
+    required TResult Function(PendingBuyOffer value) buyOffer,
+    required TResult Function(PendingRentNotice value) rentNotice,
+    required TResult Function(PendingTaxNotice value) taxNotice,
+    required TResult Function(PendingCardNotice value) cardNotice,
+    required TResult Function(PendingAuction value) auction,
+    required TResult Function(PendingTradeOffer value) tradeOffer,
+    required TResult Function(PendingWinner value) winner,
+    required TResult Function(PendingClaimOffer value) claimOffer,
+    required TResult Function(PendingShortfall value) shortfall,
+    required TResult Function(PendingCityVote value) cityVote,
+    required TResult Function(PendingHeatCheck value) heatCheck,
+  }) {
+    return heatCheck(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(PendingNone value)? none,
+    TResult? Function(PendingBuyOffer value)? buyOffer,
+    TResult? Function(PendingRentNotice value)? rentNotice,
+    TResult? Function(PendingTaxNotice value)? taxNotice,
+    TResult? Function(PendingCardNotice value)? cardNotice,
+    TResult? Function(PendingAuction value)? auction,
+    TResult? Function(PendingTradeOffer value)? tradeOffer,
+    TResult? Function(PendingWinner value)? winner,
+    TResult? Function(PendingClaimOffer value)? claimOffer,
+    TResult? Function(PendingShortfall value)? shortfall,
+    TResult? Function(PendingCityVote value)? cityVote,
+    TResult? Function(PendingHeatCheck value)? heatCheck,
+  }) {
+    return heatCheck?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(PendingNone value)? none,
+    TResult Function(PendingBuyOffer value)? buyOffer,
+    TResult Function(PendingRentNotice value)? rentNotice,
+    TResult Function(PendingTaxNotice value)? taxNotice,
+    TResult Function(PendingCardNotice value)? cardNotice,
+    TResult Function(PendingAuction value)? auction,
+    TResult Function(PendingTradeOffer value)? tradeOffer,
+    TResult Function(PendingWinner value)? winner,
+    TResult Function(PendingClaimOffer value)? claimOffer,
+    TResult Function(PendingShortfall value)? shortfall,
+    TResult Function(PendingCityVote value)? cityVote,
+    TResult Function(PendingHeatCheck value)? heatCheck,
+    required TResult orElse(),
+  }) {
+    if (heatCheck != null) {
+      return heatCheck(this);
+    }
+    return orElse();
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$PendingHeatCheckImplToJson(this);
+  }
+}
+
+abstract class PendingHeatCheck implements PendingAction {
+  const factory PendingHeatCheck({required final int fine}) =
+      _$PendingHeatCheckImpl;
+
+  factory PendingHeatCheck.fromJson(Map<String, dynamic> json) =
+      _$PendingHeatCheckImpl.fromJson;
+
+  int get fine;
+
+  /// Create a copy of PendingAction
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$PendingHeatCheckImplCopyWith<_$PendingHeatCheckImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

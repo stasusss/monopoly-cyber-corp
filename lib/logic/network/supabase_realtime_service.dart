@@ -141,6 +141,7 @@ class SupabaseRealtimeService {
       playerId: player.id,
       name: player.name,
       tokenColor: player.tokenColor.name,
+      chrome: player.chrome.name,
       joinedAtMs: joinedAtMs ??
           existing?.joinedAtMs ??
           DateTime.now().millisecondsSinceEpoch,
@@ -163,6 +164,7 @@ class SupabaseRealtimeService {
       'playerId': id,
       'name': current?.name ?? 'OPERATIVE',
       'tokenColor': current?.tokenColor ?? TokenColor.blue.name,
+      'chrome': current?.chrome ?? Chrome.sandevistan.name,
       'joinedAtMs':
           current?.joinedAtMs ?? DateTime.now().millisecondsSinceEpoch,
       'ready': ready,

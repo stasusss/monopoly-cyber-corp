@@ -33,6 +33,16 @@ class DeckManager {
     _corpoBounty.shuffle(_random);
   }
 
+  GameCard peek(CardDeckKind kind) {
+    final deck = kind == CardDeckKind.dataBreach ? _dataBreach : _corpoBounty;
+    if (deck.isEmpty) {
+      return kind == CardDeckKind.dataBreach
+          ? CyberCardCatalog.dataBreachDeck().first
+          : CyberCardCatalog.corpoBountyDeck().first;
+    }
+    return deck.first;
+  }
+
   GameCard draw(CardDeckKind kind) {
     final deck = kind == CardDeckKind.dataBreach ? _dataBreach : _corpoBounty;
     if (deck.isEmpty) {

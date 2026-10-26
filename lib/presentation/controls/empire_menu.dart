@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/game_rules.dart';
 import '../../core/l10n/app_lang.dart';
+import '../../core/theme/cyber_theme.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../logic/game_controller.dart';
 import '../../logic/nightfall.dart';
 import '../../models/game_state.dart';
+import '../../models/player.dart';
 import '../../models/pending_action.dart';
 import '../dialogs/trade_composer.dart';
 
@@ -57,6 +59,15 @@ class EmpireMenu extends ConsumerWidget {
           ),
         if (!me.buyoutUsed && claims.isNotEmpty)
           _btn(context, s.claim, controller.requestClaim),
+        if (state.phase == TurnPhase.waitingForRoll &&
+            me.chrome == Chrome.sandevistan &&
+            !me.chromeSpent &&
+            !me.chromeArmed)
+          _btn(context, s.armSand, controller.armSandevistan),
+        if (me.chrome == Chrome.cyberdeck && !me.chromeSpent)
+          _btn(context, s.peekDeck, controller.peekDeck),
+        if (state.phase == TurnPhase.waitingForRoll && !me.fixerSpent)
+          _btn(context, s.fixer, () => _fixer(context, controller, s)),
         if (me.inJail &&
             me.getOutOfJailCards > 0 &&
             state.phase == TurnPhase.waitingForRoll)
@@ -67,6 +78,38 @@ class EmpireMenu extends ConsumerWidget {
           ),
       ],
     );
+  }
+
+  Future<void> _fixer(
+    BuildContext context,
+    GameController controller,
+    AppStrings s,
+  ) async {
+    final job = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: CyberColors.panel,
+        title: Text(s.fixer, style: const TextStyle(color: CyberColors.neonCyan)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(s.fixerDelivery),
+              onTap: () => Navigator.pop(ctx, 'delivery'),
+            ),
+            ListTile(
+              title: Text(s.fixerSkim),
+              onTap: () => Navigator.pop(ctx, 'skim'),
+            ),
+            ListTile(
+              title: Text(s.fixerIce),
+              onTap: () => Navigator.pop(ctx, 'ice'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (job != null) controller.takeFixer(job);
   }
 
   bool _open(GameState state, GameController controller) {

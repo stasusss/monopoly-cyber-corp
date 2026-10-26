@@ -72,6 +72,16 @@ mixin _$GameState {
   /// Next utility bill is 10× dice regardless of how many grids the owner holds.
   bool get nextUtilityFlatTen => throw _privateConstructorUsedError;
 
+  /// Infected cells and how many landings the virus still has.
+  List<int> get virusCells => throw _privateConstructorUsedError;
+  List<int> get virusHops => throw _privateConstructorUsedError;
+  CityDecree get decree => throw _privateConstructorUsedError;
+  String get surgeGroup => throw _privateConstructorUsedError;
+  int get decreeArmedRound => throw _privateConstructorUsedError;
+
+  /// Street the syndicate seized; auction opens once the landing settles.
+  int? get queuedAuctionIndex => throw _privateConstructorUsedError;
+
   /// Serializes this GameState to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
@@ -113,6 +123,12 @@ abstract class $GameStateCopyWith<$Res> {
     List<String> blackoutGroupsThisRound,
     int nextRentMultiplier,
     bool nextUtilityFlatTen,
+    List<int> virusCells,
+    List<int> virusHops,
+    CityDecree decree,
+    String surgeGroup,
+    int decreeArmedRound,
+    int? queuedAuctionIndex,
   });
 
   $DiceRollCopyWith<$Res>? get lastRoll;
@@ -159,6 +175,12 @@ class _$GameStateCopyWithImpl<$Res, $Val extends GameState>
     Object? blackoutGroupsThisRound = null,
     Object? nextRentMultiplier = null,
     Object? nextUtilityFlatTen = null,
+    Object? virusCells = null,
+    Object? virusHops = null,
+    Object? decree = null,
+    Object? surgeGroup = null,
+    Object? decreeArmedRound = null,
+    Object? queuedAuctionIndex = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -262,6 +284,30 @@ class _$GameStateCopyWithImpl<$Res, $Val extends GameState>
                 ? _value.nextUtilityFlatTen
                 : nextUtilityFlatTen // ignore: cast_nullable_to_non_nullable
                       as bool,
+            virusCells: null == virusCells
+                ? _value.virusCells
+                : virusCells // ignore: cast_nullable_to_non_nullable
+                      as List<int>,
+            virusHops: null == virusHops
+                ? _value.virusHops
+                : virusHops // ignore: cast_nullable_to_non_nullable
+                      as List<int>,
+            decree: null == decree
+                ? _value.decree
+                : decree // ignore: cast_nullable_to_non_nullable
+                      as CityDecree,
+            surgeGroup: null == surgeGroup
+                ? _value.surgeGroup
+                : surgeGroup // ignore: cast_nullable_to_non_nullable
+                      as String,
+            decreeArmedRound: null == decreeArmedRound
+                ? _value.decreeArmedRound
+                : decreeArmedRound // ignore: cast_nullable_to_non_nullable
+                      as int,
+            queuedAuctionIndex: freezed == queuedAuctionIndex
+                ? _value.queuedAuctionIndex
+                : queuedAuctionIndex // ignore: cast_nullable_to_non_nullable
+                      as int?,
           )
           as $Val,
     );
@@ -327,6 +373,12 @@ abstract class _$$GameStateImplCopyWith<$Res>
     List<String> blackoutGroupsThisRound,
     int nextRentMultiplier,
     bool nextUtilityFlatTen,
+    List<int> virusCells,
+    List<int> virusHops,
+    CityDecree decree,
+    String surgeGroup,
+    int decreeArmedRound,
+    int? queuedAuctionIndex,
   });
 
   @override
@@ -374,6 +426,12 @@ class __$$GameStateImplCopyWithImpl<$Res>
     Object? blackoutGroupsThisRound = null,
     Object? nextRentMultiplier = null,
     Object? nextUtilityFlatTen = null,
+    Object? virusCells = null,
+    Object? virusHops = null,
+    Object? decree = null,
+    Object? surgeGroup = null,
+    Object? decreeArmedRound = null,
+    Object? queuedAuctionIndex = freezed,
   }) {
     return _then(
       _$GameStateImpl(
@@ -477,6 +535,30 @@ class __$$GameStateImplCopyWithImpl<$Res>
             ? _value.nextUtilityFlatTen
             : nextUtilityFlatTen // ignore: cast_nullable_to_non_nullable
                   as bool,
+        virusCells: null == virusCells
+            ? _value._virusCells
+            : virusCells // ignore: cast_nullable_to_non_nullable
+                  as List<int>,
+        virusHops: null == virusHops
+            ? _value._virusHops
+            : virusHops // ignore: cast_nullable_to_non_nullable
+                  as List<int>,
+        decree: null == decree
+            ? _value.decree
+            : decree // ignore: cast_nullable_to_non_nullable
+                  as CityDecree,
+        surgeGroup: null == surgeGroup
+            ? _value.surgeGroup
+            : surgeGroup // ignore: cast_nullable_to_non_nullable
+                  as String,
+        decreeArmedRound: null == decreeArmedRound
+            ? _value.decreeArmedRound
+            : decreeArmedRound // ignore: cast_nullable_to_non_nullable
+                  as int,
+        queuedAuctionIndex: freezed == queuedAuctionIndex
+            ? _value.queuedAuctionIndex
+            : queuedAuctionIndex // ignore: cast_nullable_to_non_nullable
+                  as int?,
       ),
     );
   }
@@ -511,12 +593,20 @@ class _$GameStateImpl extends _GameState {
     final List<String> blackoutGroupsThisRound = const [],
     this.nextRentMultiplier = 1,
     this.nextUtilityFlatTen = false,
+    final List<int> virusCells = const [],
+    final List<int> virusHops = const [],
+    this.decree = CityDecree.none,
+    this.surgeGroup = '',
+    this.decreeArmedRound = 0,
+    this.queuedAuctionIndex,
   }) : _board = board,
        _players = players,
        _log = log,
        _suppressedCells = suppressedCells,
        _suppressedBy = suppressedBy,
        _blackoutGroupsThisRound = blackoutGroupsThisRound,
+       _virusCells = virusCells,
+       _virusHops = virusHops,
        super._();
 
   factory _$GameStateImpl.fromJson(Map<String, dynamic> json) =>
@@ -654,9 +744,44 @@ class _$GameStateImpl extends _GameState {
   @JsonKey()
   final bool nextUtilityFlatTen;
 
+  /// Infected cells and how many landings the virus still has.
+  final List<int> _virusCells;
+
+  /// Infected cells and how many landings the virus still has.
+  @override
+  @JsonKey()
+  List<int> get virusCells {
+    if (_virusCells is EqualUnmodifiableListView) return _virusCells;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_virusCells);
+  }
+
+  final List<int> _virusHops;
+  @override
+  @JsonKey()
+  List<int> get virusHops {
+    if (_virusHops is EqualUnmodifiableListView) return _virusHops;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_virusHops);
+  }
+
+  @override
+  @JsonKey()
+  final CityDecree decree;
+  @override
+  @JsonKey()
+  final String surgeGroup;
+  @override
+  @JsonKey()
+  final int decreeArmedRound;
+
+  /// Street the syndicate seized; auction opens once the landing settles.
+  @override
+  final int? queuedAuctionIndex;
+
   @override
   String toString() {
-    return 'GameState(board: $board, players: $players, activePlayerIndex: $activePlayerIndex, phase: $phase, lastRoll: $lastRoll, consecutiveDoubles: $consecutiveDoubles, moveFromIndex: $moveFromIndex, moveStepsLeft: $moveStepsLeft, log: $log, winnerId: $winnerId, pendingAction: $pendingAction, aiDialogue: $aiDialogue, aiDialogueSpeakerId: $aiDialogueSpeakerId, isWaitingForReconnection: $isWaitingForReconnection, disconnectedPlayerName: $disconnectedPlayerName, reconnectDeadlineMs: $reconnectDeadlineMs, round: $round, bankruptcyCount: $bankruptcyCount, housesInBank: $housesInBank, hotelsInBank: $hotelsInBank, suppressedCells: $suppressedCells, suppressedBy: $suppressedBy, blackoutGroupsThisRound: $blackoutGroupsThisRound, nextRentMultiplier: $nextRentMultiplier, nextUtilityFlatTen: $nextUtilityFlatTen)';
+    return 'GameState(board: $board, players: $players, activePlayerIndex: $activePlayerIndex, phase: $phase, lastRoll: $lastRoll, consecutiveDoubles: $consecutiveDoubles, moveFromIndex: $moveFromIndex, moveStepsLeft: $moveStepsLeft, log: $log, winnerId: $winnerId, pendingAction: $pendingAction, aiDialogue: $aiDialogue, aiDialogueSpeakerId: $aiDialogueSpeakerId, isWaitingForReconnection: $isWaitingForReconnection, disconnectedPlayerName: $disconnectedPlayerName, reconnectDeadlineMs: $reconnectDeadlineMs, round: $round, bankruptcyCount: $bankruptcyCount, housesInBank: $housesInBank, hotelsInBank: $hotelsInBank, suppressedCells: $suppressedCells, suppressedBy: $suppressedBy, blackoutGroupsThisRound: $blackoutGroupsThisRound, nextRentMultiplier: $nextRentMultiplier, nextUtilityFlatTen: $nextUtilityFlatTen, virusCells: $virusCells, virusHops: $virusHops, decree: $decree, surgeGroup: $surgeGroup, decreeArmedRound: $decreeArmedRound, queuedAuctionIndex: $queuedAuctionIndex)';
   }
 
   @override
@@ -717,7 +842,22 @@ class _$GameStateImpl extends _GameState {
             (identical(other.nextRentMultiplier, nextRentMultiplier) ||
                 other.nextRentMultiplier == nextRentMultiplier) &&
             (identical(other.nextUtilityFlatTen, nextUtilityFlatTen) ||
-                other.nextUtilityFlatTen == nextUtilityFlatTen));
+                other.nextUtilityFlatTen == nextUtilityFlatTen) &&
+            const DeepCollectionEquality().equals(
+              other._virusCells,
+              _virusCells,
+            ) &&
+            const DeepCollectionEquality().equals(
+              other._virusHops,
+              _virusHops,
+            ) &&
+            (identical(other.decree, decree) || other.decree == decree) &&
+            (identical(other.surgeGroup, surgeGroup) ||
+                other.surgeGroup == surgeGroup) &&
+            (identical(other.decreeArmedRound, decreeArmedRound) ||
+                other.decreeArmedRound == decreeArmedRound) &&
+            (identical(other.queuedAuctionIndex, queuedAuctionIndex) ||
+                other.queuedAuctionIndex == queuedAuctionIndex));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -749,6 +889,12 @@ class _$GameStateImpl extends _GameState {
     const DeepCollectionEquality().hash(_blackoutGroupsThisRound),
     nextRentMultiplier,
     nextUtilityFlatTen,
+    const DeepCollectionEquality().hash(_virusCells),
+    const DeepCollectionEquality().hash(_virusHops),
+    decree,
+    surgeGroup,
+    decreeArmedRound,
+    queuedAuctionIndex,
   ]);
 
   /// Create a copy of GameState
@@ -792,6 +938,12 @@ abstract class _GameState extends GameState {
     final List<String> blackoutGroupsThisRound,
     final int nextRentMultiplier,
     final bool nextUtilityFlatTen,
+    final List<int> virusCells,
+    final List<int> virusHops,
+    final CityDecree decree,
+    final String surgeGroup,
+    final int decreeArmedRound,
+    final int? queuedAuctionIndex,
   }) = _$GameStateImpl;
   const _GameState._() : super._();
 
@@ -872,6 +1024,22 @@ abstract class _GameState extends GameState {
   /// Next utility bill is 10× dice regardless of how many grids the owner holds.
   @override
   bool get nextUtilityFlatTen;
+
+  /// Infected cells and how many landings the virus still has.
+  @override
+  List<int> get virusCells;
+  @override
+  List<int> get virusHops;
+  @override
+  CityDecree get decree;
+  @override
+  String get surgeGroup;
+  @override
+  int get decreeArmedRound;
+
+  /// Street the syndicate seized; auction opens once the landing settles.
+  @override
+  int? get queuedAuctionIndex;
 
   /// Create a copy of GameState
   /// with the given fields replaced by the non-null parameter values.

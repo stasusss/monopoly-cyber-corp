@@ -62,4 +62,16 @@ abstract final class GameRules {
 
   /// Forced district claim price, percent of list price.
   static const int buyoutPercent = 120;
+
+  /// NCPD attention. At this value the next turn is a fine or detention.
+  static const int heatMax = 5;
+  static const int heatFine = 100;
+
+  /// Rent at or above this adds one heat to the collector.
+  static const int bigRentHeat = 150;
+
+  static const int virusCost = 80;
+  static const int virusClearCost = 60;
+  static const int virusHops = 3;
+  static const int fixerPurse = 150;
 }

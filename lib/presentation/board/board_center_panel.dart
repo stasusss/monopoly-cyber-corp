@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/game_rules.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
+import '../../logic/city_ops.dart';
 import '../../models/game_state.dart';
 import '../../models/pending_action.dart';
 import '../controls/empire_menu.dart';
@@ -104,6 +105,13 @@ class BoardCenterPanel extends StatelessWidget {
               cell: focus,
               height: showActions ? 128 : 84,
               onTap: onOpenFocus,
+              virusHops: CityOps.virusHopsOf(state, focus.index),
+              status: CityOps.consequence(
+                state: state,
+                cell: focus,
+                viewer: state.activePlayer,
+                s: s,
+              ),
             ),
             const SizedBox(height: 4),
             Text(

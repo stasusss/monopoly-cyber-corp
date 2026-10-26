@@ -10,6 +10,7 @@ import '../../models/player.dart';
 import '../widgets/cyber_dialogue_bubble.dart';
 import '../widgets/signal_lost_banner.dart';
 import 'board_cell_widget.dart';
+import '../../logic/city_ops.dart';
 import 'board_center_panel.dart';
 import 'board_geometry.dart';
 import 'cell_deed_sheet.dart';
@@ -175,6 +176,7 @@ class _MonopolyBoardState extends ConsumerState<MonopolyBoard> {
             child: BoardCellWidget(
               cell: cell,
               ownerColor: _ownerColor(state, cell.ownerIdOrNull),
+              virusHops: CityOps.virusHopsOf(state, cell.index),
               selected: _selected == cell.index,
               onTap: () => _openCell(cell.index),
             ),

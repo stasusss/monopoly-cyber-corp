@@ -34,6 +34,12 @@ _$PlayerImpl _$$PlayerImplFromJson(Map<String, dynamic> json) => _$PlayerImpl(
       (json['overdraftInstallmentsLeft'] as num?)?.toInt() ?? 0,
   buyoutUsed: json['buyoutUsed'] as bool? ?? false,
   blackoutUsedThisTurn: json['blackoutUsedThisTurn'] as bool? ?? false,
+  chrome: $enumDecodeNullable(_$ChromeEnumMap, json['chrome']) ?? Chrome.none,
+  chromeSpent: json['chromeSpent'] as bool? ?? false,
+  chromeArmed: json['chromeArmed'] as bool? ?? false,
+  fixerSpent: json['fixerSpent'] as bool? ?? false,
+  heat: (json['heat'] as num?)?.toInt() ?? 0,
+  virusRound: (json['virusRound'] as num?)?.toInt() ?? 0,
 );
 
 Map<String, dynamic> _$$PlayerImplToJson(_$PlayerImpl instance) =>
@@ -56,6 +62,12 @@ Map<String, dynamic> _$$PlayerImplToJson(_$PlayerImpl instance) =>
       'overdraftInstallmentsLeft': instance.overdraftInstallmentsLeft,
       'buyoutUsed': instance.buyoutUsed,
       'blackoutUsedThisTurn': instance.blackoutUsedThisTurn,
+      'chrome': _$ChromeEnumMap[instance.chrome]!,
+      'chromeSpent': instance.chromeSpent,
+      'chromeArmed': instance.chromeArmed,
+      'fixerSpent': instance.fixerSpent,
+      'heat': instance.heat,
+      'virusRound': instance.virusRound,
     };
 
 const _$TokenColorEnumMap = {
@@ -69,4 +81,12 @@ const _$AiProfileEnumMap = {
   AiProfile.aggressive: 'aggressive',
   AiProfile.banker: 'banker',
   AiProfile.strategist: 'strategist',
+};
+
+const _$ChromeEnumMap = {
+  Chrome.none: 'none',
+  Chrome.sandevistan: 'sandevistan',
+  Chrome.kerenzikov: 'kerenzikov',
+  Chrome.cyberdeck: 'cyberdeck',
+  Chrome.mantis: 'mantis',
 };

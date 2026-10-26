@@ -16,6 +16,30 @@ enum TokenColor {
   yellow,
 }
 
+/// One piece of chrome chosen in the lobby. Most charges spend once.
+enum Chrome {
+  none,
+  sandevistan,
+  kerenzikov,
+  cyberdeck,
+  mantis,
+}
+
+extension ChromeX on Chrome {
+  static Chrome parse(String? raw) {
+    for (final chrome in Chrome.values) {
+      if (chrome.name == raw) return chrome;
+    }
+    return Chrome.none;
+  }
+
+  static Chrome forProfile(AiProfile? profile) => switch (profile) {
+        AiProfile.aggressive => Chrome.mantis,
+        AiProfile.banker => Chrome.kerenzikov,
+        _ => Chrome.cyberdeck,
+      };
+}
+
 extension TokenColorX on TokenColor {
   Color get color => switch (this) {
         TokenColor.red => const Color(0xFFE53935),
@@ -64,6 +88,12 @@ abstract class Player with _$Player {
     @Default(0) int overdraftInstallmentsLeft,
     @Default(false) bool buyoutUsed,
     @Default(false) bool blackoutUsedThisTurn,
+    @Default(Chrome.none) Chrome chrome,
+    @Default(false) bool chromeSpent,
+    @Default(false) bool chromeArmed,
+    @Default(false) bool fixerSpent,
+    @Default(0) int heat,
+    @Default(0) int virusRound,
   }) = _Player;
 
   factory Player.fromJson(Map<String, dynamic> json) => _$PlayerFromJson(json);

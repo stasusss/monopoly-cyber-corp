@@ -59,6 +59,9 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
   }
 
   void _goSolo() {
+    ref.read(gameControllerProvider.notifier).equipHumanChrome(
+          ref.read(lobbyControllerProvider).chrome,
+        );
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(builder: (_) => const GameShellPage()),
     );
@@ -174,6 +177,9 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> {
                       onColor: (c) => ref
                           .read(lobbyControllerProvider.notifier)
                           .setTokenColor(c),
+                      onChrome: (c) => ref
+                          .read(lobbyControllerProvider.notifier)
+                          .setChrome(c),
                       onCreate: () {
                         ref
                             .read(lobbyControllerProvider.notifier)
@@ -241,6 +247,7 @@ class _EntryPane extends StatelessWidget {
     required this.lobby,
     required this.onNick,
     required this.onColor,
+    required this.onChrome,
     required this.onCreate,
     required this.onJoin,
     required this.onSolo,
@@ -251,6 +258,7 @@ class _EntryPane extends StatelessWidget {
   final LobbyState lobby;
   final ValueChanged<String> onNick;
   final ValueChanged<TokenColor> onColor;
+  final ValueChanged<Chrome> onChrome;
   final Future<void> Function() onCreate;
   final Future<void> Function() onJoin;
   final VoidCallback onSolo;
@@ -400,6 +408,37 @@ class _EntryPane extends StatelessWidget {
                   ),
                 );
               }).toList(),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'CHROME',
+              style: GoogleFonts.shareTechMono(
+                color: CyberColors.cyberYellow,
+                fontSize: 11,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              s.chromeBlurb(lobby.chrome.name),
+              style: GoogleFonts.rajdhani(
+                color: CyberColors.textMuted,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final chrome in Chrome.values)
+                  if (chrome != Chrome.none)
+                    ChoiceChip(
+                      label: Text(s.chromeName(chrome.name)),
+                      selected: lobby.chrome == chrome,
+                      onSelected: (_) => onChrome(chrome),
+                    ),
+              ],
             ),
             const SizedBox(height: 24),
             FilledButton.icon(

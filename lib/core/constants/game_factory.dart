@@ -36,6 +36,9 @@ abstract final class GameFactory {
           aiProfile: entry.isAi
               ? (entry.aiProfile ?? AiProfile.strategist)
               : null,
+          chrome: entry.isAi
+              ? ChromeX.forProfile(entry.aiProfile ?? AiProfile.strategist)
+              : Chrome.none,
         ),
     ];
 
@@ -74,6 +77,11 @@ abstract final class GameFactory {
             overdraftInstallmentsLeft: 0,
             buyoutUsed: false,
             blackoutUsedThisTurn: false,
+            chromeSpent: false,
+            chromeArmed: false,
+            fixerSpent: false,
+            heat: 0,
+            virusRound: 0,
           ),
       ],
       log: [

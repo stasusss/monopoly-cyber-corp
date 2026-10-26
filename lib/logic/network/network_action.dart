@@ -33,7 +33,18 @@ enum NetworkActionType {
   declineClaim('ACTION_DECLINE_CLAIM'),
   ready('ACTION_READY'),
   startGame('ACTION_START_GAME'),
-  kickToAi('ACTION_KICK_TO_AI');
+  kickToAi('ACTION_KICK_TO_AI'),
+  armChrome('ACTION_ARM_CHROME'),
+  peekDeck('ACTION_PEEK_DECK'),
+  dodgeRent('ACTION_DODGE_RENT'),
+  fixer('ACTION_FIXER'),
+  plantVirus('ACTION_PLANT_VIRUS'),
+  clearVirus('ACTION_CLEAR_VIRUS'),
+  settleShortfall('ACTION_SETTLE_SHORTFALL'),
+  abandonShortfall('ACTION_ABANDON_SHORTFALL'),
+  heatPay('ACTION_HEAT_PAY'),
+  heatJail('ACTION_HEAT_JAIL'),
+  cityDecree('ACTION_CITY_DECREE');
 
   const NetworkActionType(this.wireName);
   final String wireName;
@@ -117,6 +128,7 @@ class PresenceMember {
     required this.tokenColor,
     required this.joinedAtMs,
     required this.presenceKey,
+    this.chrome = 'sandevistan',
     this.ready = false,
     this.isHost = false,
   });
@@ -124,6 +136,7 @@ class PresenceMember {
   final String playerId;
   final String name;
   final String tokenColor;
+  final String chrome;
   final int joinedAtMs;
   final String presenceKey;
   final bool ready;
@@ -133,6 +146,7 @@ class PresenceMember {
         'playerId': playerId,
         'name': name,
         'tokenColor': tokenColor,
+        'chrome': chrome,
         'joinedAtMs': joinedAtMs,
         'ready': ready,
       };
@@ -146,6 +160,7 @@ class PresenceMember {
       playerId: payload['playerId'] as String? ?? presenceKey,
       name: payload['name'] as String? ?? 'UNKNOWN',
       tokenColor: payload['tokenColor'] as String? ?? 'cyan',
+      chrome: payload['chrome'] as String? ?? 'sandevistan',
       joinedAtMs: (payload['joinedAtMs'] as num?)?.toInt() ?? 0,
       presenceKey: presenceKey,
       ready: payload['ready'] as bool? ?? false,
@@ -163,6 +178,7 @@ class PresenceMember {
       playerId: playerId,
       name: name ?? this.name,
       tokenColor: tokenColor ?? this.tokenColor,
+      chrome: chrome,
       joinedAtMs: joinedAtMs,
       presenceKey: presenceKey,
       ready: ready ?? this.ready,

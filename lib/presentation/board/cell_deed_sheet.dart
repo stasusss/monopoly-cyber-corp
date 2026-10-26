@@ -8,6 +8,7 @@ import '../../core/constants/game_rules.dart';
 import '../../core/l10n/app_lang.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/theme/cyber_theme.dart';
+import '../../logic/city_ops.dart';
 import '../../logic/game_controller.dart';
 import '../../logic/nightfall.dart';
 import '../../models/cell.dart';
@@ -113,6 +114,7 @@ class _DeedSheetState extends ConsumerState<_DeedSheet> {
                         cell: state.board[index],
                         board: state.board,
                         players: state.players,
+                        virusHops: CityOps.virusHopsOf(state, index),
                       );
                     },
                   ),
@@ -131,11 +133,13 @@ class _DeedPage extends StatelessWidget {
     required this.cell,
     required this.board,
     required this.players,
+    this.virusHops = 0,
   });
 
   final BoardCell cell;
   final List<BoardCell> board;
   final List<Player> players;
+  final int virusHops;
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +155,7 @@ class _DeedPage extends StatelessWidget {
           child: SizedBox(
             height: 168,
             width: double.infinity,
-            child: CellArtwork(cell: cell),
+            child: CellArtwork(cell: cell, virusHops: virusHops),
           ),
         ),
         Container(height: 4, color: accent),
@@ -520,6 +524,37 @@ class _DeedActions extends ConsumerWidget {
           ),
         );
       }
+    }
+
+    final infected = CityOps.virusHopsOf(state, node.index) > 0;
+    if (node.ownerIdOrNull == me.id && infected) {
+      if (me.balance >= GameRules.virusClearCost) {
+        buttons.add(
+          _act(
+            context,
+            () {
+              controller.clearVirus(node.index);
+              return true;
+            },
+            s.clearVirusLabel(GameRules.credits(GameRules.virusClearCost)),
+          ),
+        );
+      }
+    } else if (node.ownerIdOrNull != null &&
+        node.ownerIdOrNull != me.id &&
+        !infected &&
+        me.virusRound != state.round &&
+        me.balance >= GameRules.virusCost) {
+      buttons.add(
+        _act(
+          context,
+            () {
+              controller.plantVirus(node.index);
+              return true;
+            },
+          s.virusLabel(GameRules.credits(GameRules.virusCost)),
+        ),
+      );
     }
 
     if (buttons.isEmpty && notes.isEmpty) return const SizedBox.shrink();

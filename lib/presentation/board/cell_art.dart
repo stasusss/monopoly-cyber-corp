@@ -67,9 +67,10 @@ abstract final class CellArt {
 }
 
 class CellArtwork extends StatelessWidget {
-  const CellArtwork({super.key, required this.cell});
+  const CellArtwork({super.key, required this.cell, this.virusHops = 0});
 
   final BoardCell cell;
+  final int virusHops;
 
   static const List<double> _muted = <double>[
     0.45, 0.35, 0.2, 0, 0,
@@ -81,6 +82,7 @@ class CellArtwork extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mark = CellArt.stationMark(cell);
+    final racks = cell is PropertyCell ? (cell as PropertyCell).houses : 0;
     Widget image = Image.asset(
       CellArt.assetFor(cell),
       fit: BoxFit.cover,
@@ -100,6 +102,43 @@ class CellArtwork extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         image,
+        if (virusHops > 0)
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0x55FF2BD6), Color(0x00000000), Color(0x66FF2BD6)],
+              ),
+            ),
+            child: SizedBox.expand(),
+          ),
+        if (racks > 0)
+          Positioned(
+            left: 3,
+            bottom: 3,
+            child: Row(
+              children: [
+                for (var i = 0; i < (racks >= 5 ? 4 : racks); i++)
+                  Container(
+                    width: racks >= 5 ? 5 : 4,
+                    height: racks >= 5 ? 5 : 4,
+                    margin: const EdgeInsets.only(right: 2),
+                    decoration: BoxDecoration(
+                      color: racks >= 5
+                          ? CyberColors.neonMagenta
+                          : CyberColors.neonCyan,
+                      boxShadow: CyberTheme.glow(
+                        racks >= 5
+                            ? CyberColors.neonMagenta
+                            : CyberColors.neonCyan,
+                        blur: 4,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         if (mark != null)
           Positioned(
             left: 2,
@@ -139,12 +178,16 @@ class CellPortrait extends StatelessWidget {
     this.height = 120,
     this.onTap,
     this.showCaption = true,
+    this.status,
+    this.virusHops = 0,
   });
 
   final BoardCell cell;
   final double height;
   final VoidCallback? onTap;
   final bool showCaption;
+  final String? status;
+  final int virusHops;
 
   @override
   Widget build(BuildContext context) {
@@ -159,7 +202,7 @@ class CellPortrait extends StatelessWidget {
       child: SizedBox(
         height: height,
         width: double.infinity,
-        child: CellArtwork(cell: cell),
+        child: CellArtwork(cell: cell, virusHops: virusHops),
       ),
     );
 
@@ -181,7 +224,18 @@ class CellPortrait extends StatelessWidget {
               height: 1.1,
             ),
           ),
-          if (district != null || price != null)
+          if (status != null && status!.isNotEmpty)
+            Text(
+              status!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.shareTechMono(
+                color: CyberColors.terminalGreen,
+                fontSize: 10,
+                height: 1.2,
+              ),
+            )
+          else if (district != null || price != null)
             Text(
               [
                 ?district,

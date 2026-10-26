@@ -18,6 +18,7 @@ import '../models/player.dart';
 import 'ai/ai_decision_matrix.dart';
 import 'ai/ai_dialogue_service.dart';
 import 'ai/ai_service.dart';
+import 'city_ops.dart';
 import 'cards/card_resolver.dart';
 import 'cards/deck_manager.dart';
 import 'cards/game_card.dart';
@@ -182,6 +183,12 @@ class GameController extends StateNotifier<GameState>
   void aiBlackout(int cellIndex) => blackout(cellIndex);
 
   @override
+  void aiPlantVirus(int cellIndex) => plantVirus(cellIndex);
+
+  @override
+  void aiTakeFixer(String job) => takeFixer(job);
+
+  @override
   void aiAcceptClaim(int cellIndex) => acceptClaim(cellIndex);
 
   @override
@@ -195,7 +202,24 @@ class GameController extends StateNotifier<GameState>
     if (state.phase != TurnPhase.waitingForRoll || state.isGameOver) return;
     if (state.pendingAction is! PendingNone) return;
 
-    final roll = DiceRoll.roll(_random);
+    var roll = DiceRoll.roll(_random);
+    final sand = _active.chrome == Chrome.sandevistan &&
+        !_active.chromeSpent &&
+        (_active.chromeArmed || _active.isAi);
+    if (sand) {
+      final alt = DiceRoll.roll(_random);
+      if (alt.total > roll.total) roll = alt;
+      state = state.copyWith(
+        players: _replacePlayer(
+          _active.copyWith(chromeSpent: true, chromeArmed: false),
+        ),
+      );
+    }
+    if (roll.isDoubles) {
+      state = state.copyWith(
+        players: _replacePlayer(_active.copyWith(heat: _active.heat + 1)),
+      );
+    }
     state = state.copyWith(
       phase: TurnPhase.rolling,
       lastRoll: roll,
@@ -281,7 +305,7 @@ class GameController extends StateNotifier<GameState>
     if (!_allowActivePlayerAction()) return;
     final pending = state.pendingAction;
     if (pending is! PendingBuyOffer) return;
-    _purchase(pending.cellIndex);
+    _purchase(pending.cellIndex, priceOverride: pending.price);
     _clearPendingAndContinue();
     _hostSync();
   }
@@ -396,8 +420,50 @@ class GameController extends StateNotifier<GameState>
         pending is PendingWinner ||
         pending is PendingAuction ||
         pending is PendingTradeOffer ||
-        pending is PendingClaimOffer) {
+        pending is PendingClaimOffer ||
+        pending is PendingShortfall ||
+        pending is PendingCityVote ||
+        pending is PendingHeatCheck) {
       return;
+    }
+    if (pending is PendingRentNotice && pending.canDodge) {
+      final covered = _ensureFunds(
+        amount: pending.amount,
+        kind: 'rent',
+        label: pending.propertyName,
+      );
+      if (covered == null) return;
+      if (covered == false ||
+          RulesEngine.isBankruptAfter(_active, pending.amount)) {
+        _declareBankruptcy(_active, creditorId: null);
+        return;
+      }
+      final owner = state.players
+          .where((p) => p.name == pending.ownerName)
+          .firstOrNull;
+      final payer = _active.copyWith(balance: _active.balance - pending.amount);
+      final players = owner == null
+          ? _replacePlayer(payer)
+          : _replacePlayers([
+              payer,
+              owner.copyWith(
+                balance: owner.balance + pending.amount,
+                heat: pending.amount >= GameRules.bigRentHeat
+                    ? owner.heat + 1
+                    : owner.heat,
+              ),
+            ]);
+      state = state.copyWith(
+        players: players,
+        log: _append(
+          t.paidRent(
+            payer.name,
+            GameRules.credits(pending.amount),
+            pending.ownerName,
+            pending.propertyName,
+          ),
+        ),
+      );
     }
     if (pending is PendingNone) return;
 
@@ -429,10 +495,13 @@ class GameController extends StateNotifier<GameState>
     if (!_allowActivePlayerAction()) return;
     if (!_active.inJail || state.phase != TurnPhase.waitingForRoll) return;
     if (!RulesEngine.canAfford(_active, GameRules.jailFine)) {
-      if (_active.isAi) {
-        raiseFunds(_active.id, GameRules.jailFine);
-      }
-      if (!RulesEngine.canAfford(_active, GameRules.jailFine)) {
+      final covered = _ensureFunds(
+        amount: GameRules.jailFine,
+        kind: 'jail',
+        label: 'ICE',
+      );
+      if (covered == null) return;
+      if (covered != true) {
         state = state.copyWith(
           log: _append(
             t.cannotPayFine(_active.name, GameRules.credits(GameRules.jailFine)),
@@ -735,6 +804,7 @@ class GameController extends StateNotifier<GameState>
     final hacker = player.copyWith(
       balance: player.balance - cost,
       blackoutUsedThisTurn: true,
+      heat: player.heat + 2,
     );
     state = state.copyWith(
       players: _replacePlayer(hacker),
@@ -748,6 +818,311 @@ class GameController extends StateNotifier<GameState>
         t.blackedOut(hacker.name, cell.name, GameRules.credits(cost)),
       ),
     );
+    _hostSync();
+  }
+
+  void equipHumanChrome(Chrome chrome) {
+    if (isOnline || state.isGameOver) return;
+    if (state.round != 1 || state.phase != TurnPhase.waitingForRoll) return;
+    state = state.copyWith(
+      players: [
+        for (final p in state.players)
+          if (p.isAi) p else p.copyWith(chrome: chrome, chromeSpent: false),
+      ],
+    );
+  }
+
+  void armSandevistan() {
+    if (_clientSend(NetworkActionType.armChrome)) return;
+    if (!_canManageEmpire()) return;
+    if (state.phase != TurnPhase.waitingForRoll) return;
+    if (_active.chrome != Chrome.sandevistan || _active.chromeSpent) return;
+    state = state.copyWith(
+      players: _replacePlayer(_active.copyWith(chromeArmed: true)),
+      log: _append(
+        t.pick(
+          '${_active.name} arms Sandevistan.',
+          '${_active.name} вмикає Sandevistan.',
+        ),
+      ),
+    );
+    _hostSync();
+  }
+
+  void peekDeck() {
+    if (_clientSend(NetworkActionType.peekDeck)) return;
+    if (!_canManageEmpire()) return;
+    if (_active.chrome != Chrome.cyberdeck || _active.chromeSpent) return;
+    final card = _decks.peek(CardDeckKind.dataBreach);
+    state = state.copyWith(
+      players: _replacePlayer(_active.copyWith(chromeSpent: true)),
+      aiDialogue: card.description,
+      aiDialogueSpeakerId: _active.id,
+      log: _append(
+        t.pick(
+          '${_active.name} reads the next breach: ${card.description}',
+          '${_active.name} читає наступний витік: ${card.description}',
+        ),
+      ),
+    );
+    _hostSync();
+  }
+
+  void dodgeRent() {
+    if (_clientSend(NetworkActionType.dodgeRent)) return;
+    if (!_allowActivePlayerAction()) return;
+    final pending = state.pendingAction;
+    if (pending is! PendingRentNotice || !pending.canDodge) return;
+    if (_active.chrome != Chrome.kerenzikov || _active.chromeSpent) return;
+    state = state.copyWith(
+      players: _replacePlayer(_active.copyWith(chromeSpent: true)),
+      pendingAction: const PendingAction.none(),
+      phase: TurnPhase.canEndTurn,
+      log: _append(
+        t.pick(
+          '${_active.name} burns Kerenzikov.',
+          '${_active.name} палить Kerenzikov.',
+        ),
+      ),
+    );
+    if (_flushQueuedAuction()) {
+      _hostSync();
+      return;
+    }
+    _pokeAi();
+    _hostSync();
+  }
+
+  void takeFixer(String job) {
+    if (_clientSend(NetworkActionType.fixer, {'job': job})) return;
+    if (!_allowActivePlayerAction()) return;
+    if (state.phase != TurnPhase.waitingForRoll) return;
+    if (state.pendingAction is! PendingNone || _active.fixerSpent) return;
+    state = state.copyWith(
+      players: _replacePlayer(_active.copyWith(fixerSpent: true)),
+    );
+    switch (job) {
+      case 'skim':
+        final p = _active.copyWith(
+          balance: _active.balance + GameRules.fixerPurse,
+          heat: _active.heat + 2,
+        );
+        state = state.copyWith(
+          players: _replacePlayer(p),
+          phase: TurnPhase.canEndTurn,
+          log: _append(
+            t.pick(
+              '${p.name} skims ${GameRules.credits(GameRules.fixerPurse)}.',
+              '${p.name} зливає ${GameRules.credits(GameRules.fixerPurse)}.',
+            ),
+          ),
+        );
+      case 'ice':
+        final p = _active.copyWith(balance: _active.balance + 50, heat: 0);
+        state = state.copyWith(
+          players: _replacePlayer(p),
+          phase: TurnPhase.canEndTurn,
+          log: _append(
+            t.pick('${p.name} takes an ice bath.', '${p.name} сідає в кригу.'),
+          ),
+        );
+      default:
+        final p = _active.copyWith(
+          position: 37,
+          inJail: false,
+          jailTurns: 0,
+          heat: _active.heat + 1,
+        );
+        state = state.copyWith(
+          players: _replacePlayer(p),
+          phase: TurnPhase.cellAction,
+          moveStepsLeft: 0,
+          moveFromIndex: null,
+          log: _append(
+            t.pick(
+              '${p.name} runs a package to Arasaka Tower Lobby.',
+              '${p.name} везе пакет в Arasaka Tower Lobby.',
+            ),
+          ),
+        );
+        _resolveCell();
+    }
+    _pokeAi();
+    _hostSync();
+  }
+
+  void plantVirus(int cellIndex) {
+    if (_clientSend(NetworkActionType.plantVirus, {'cellIndex': cellIndex})) {
+      return;
+    }
+    if (!_canManageEmpire()) return;
+    if (_active.virusRound == state.round) return;
+    if (_active.balance < GameRules.virusCost) return;
+    final cell = state.cellAt(cellIndex);
+    final owner = cell.ownerIdOrNull;
+    if (owner == null || owner == _active.id) return;
+    if (CityOps.virusHopsOf(state, cellIndex) > 0) return;
+    state = state.copyWith(
+      players: _replacePlayer(
+        _active.copyWith(
+          balance: _active.balance - GameRules.virusCost,
+          virusRound: state.round,
+          heat: _active.heat + 1,
+        ),
+      ),
+      virusCells: [...state.virusCells, cellIndex],
+      virusHops: [...state.virusHops, GameRules.virusHops],
+      log: _append(
+        t.pick(
+          '${_active.name} infects ${cell.name}.',
+          '${_active.name} заражає ${cell.name}.',
+        ),
+      ),
+    );
+    _hostSync();
+  }
+
+  void clearVirus(int cellIndex) {
+    if (_clientSend(NetworkActionType.clearVirus, {'cellIndex': cellIndex})) {
+      return;
+    }
+    if (!_canManageEmpire()) return;
+    if (CityOps.virusHopsOf(state, cellIndex) <= 0) return;
+    final cell = state.cellAt(cellIndex);
+    if (cell.ownerIdOrNull != _active.id) return;
+    if (_active.balance < GameRules.virusClearCost) return;
+    final at = state.virusCells.indexOf(cellIndex);
+    final cells = [...state.virusCells]..removeAt(at);
+    final hops = [...state.virusHops];
+    if (at < hops.length) hops.removeAt(at);
+    state = state.copyWith(
+      players: _replacePlayer(
+        _active.copyWith(balance: _active.balance - GameRules.virusClearCost),
+      ),
+      virusCells: cells,
+      virusHops: hops,
+      log: _append(
+        t.pick(
+          '${_active.name} purges ${cell.name}.',
+          '${_active.name} знімає вірус з ${cell.name}.',
+        ),
+      ),
+    );
+    _hostSync();
+  }
+
+  void settleShortfall() {
+    if (_clientSend(NetworkActionType.settleShortfall)) return;
+    if (!_allowActivePlayerAction()) return;
+    final pending = state.pendingAction;
+    if (pending is! PendingShortfall) return;
+    if (_active.balance < pending.amount) return;
+    switch (pending.kind) {
+      case 'jail':
+        final freed = _active.copyWith(
+          balance: _active.balance - pending.amount,
+          inJail: false,
+          jailTurns: 0,
+        );
+        state = state.copyWith(
+          players: _replacePlayer(freed),
+          phase: TurnPhase.waitingForRoll,
+          pendingAction: const PendingAction.none(),
+          log: _append(
+            t.paidFine(freed.name, GameRules.credits(pending.amount)),
+          ),
+        );
+      case 'tax':
+        final p = _active.copyWith(balance: _active.balance - pending.amount);
+        state = state.copyWith(
+          players: _replacePlayer(p),
+          phase: TurnPhase.canEndTurn,
+          pendingAction: const PendingAction.none(),
+          log: _append(
+            t.paidTax(p.name, pending.label, GameRules.credits(pending.amount)),
+          ),
+        );
+      default:
+        final payer =
+            _active.copyWith(balance: _active.balance - pending.amount);
+        Player? owner;
+        final creditor = pending.creditorId;
+        if (creditor != null) {
+          for (final p in state.players) {
+            if (p.id == creditor) owner = p;
+          }
+        }
+        state = state.copyWith(
+          players: owner == null
+              ? _replacePlayer(payer)
+              : _replacePlayers([
+                  payer,
+                  owner.copyWith(
+                    balance: owner.balance + pending.amount,
+                    heat: pending.amount >= GameRules.bigRentHeat
+                        ? owner.heat + 1
+                        : owner.heat,
+                  ),
+                ]),
+          phase: TurnPhase.canEndTurn,
+          pendingAction: const PendingAction.none(),
+          log: _append(
+            t.paidRent(
+              payer.name,
+              GameRules.credits(pending.amount),
+              owner?.name ?? '',
+              pending.label,
+            ),
+          ),
+        );
+    }
+    if (_flushQueuedAuction()) {
+      _hostSync();
+      return;
+    }
+    _pokeAi();
+    _hostSync();
+  }
+
+  void abandonShortfall() {
+    if (_clientSend(NetworkActionType.abandonShortfall)) return;
+    if (!_allowActivePlayerAction()) return;
+    final pending = state.pendingAction;
+    if (pending is! PendingShortfall) return;
+    _declareBankruptcy(_active, creditorId: pending.creditorId);
+    _hostSync();
+  }
+
+  void resolveHeat({required bool pay}) {
+    if (_clientSend(pay ? NetworkActionType.heatPay : NetworkActionType.heatJail)) {
+      return;
+    }
+    if (!_allowActivePlayerAction()) return;
+    if (state.pendingAction is! PendingHeatCheck) return;
+    _applyHeat(pay: pay);
+    _pokeAi();
+    _hostSync();
+  }
+
+  void chooseDecree(String kind) {
+    if (_clientSend(NetworkActionType.cityDecree, {'kind': kind})) return;
+    final pending = state.pendingAction;
+    if (pending is! PendingCityVote) return;
+    if (isOnline && !_applyingRemote && pending.leaderId != localPlayerId) {
+      if (!(isHost &&
+          state.players.any((p) => p.id == pending.leaderId && p.isAi))) {
+        return;
+      }
+    }
+    final leader = state.players.firstWhere((p) => p.id == pending.leaderId);
+    final group = CityOps.surgeGroupFor(state, leader) ?? '';
+    _applyDecree(leader.id, kind, pending.round, group: group);
+    state = state.copyWith(
+      phase: TurnPhase.waitingForRoll,
+      pendingAction: const PendingAction.none(),
+    );
+    _openHeatIfDue();
+    _pokeAi();
     _hostSync();
   }
 
@@ -855,6 +1230,7 @@ class GameController extends StateNotifier<GameState>
           ),
           balance: GameRules.startingMoney,
           isAi: false,
+          chrome: ChromeX.parse(m.chrome),
         ),
     ];
 
@@ -1030,8 +1406,10 @@ class GameController extends StateNotifier<GameState>
 
   bool _canManageEmpire() {
     if (state.isGameOver) return false;
-    if (state.pendingAction is! PendingNone) return false;
-    if (state.phase != TurnPhase.waitingForRoll &&
+    final short = state.pendingAction is PendingShortfall;
+    if (state.pendingAction is! PendingNone && !short) return false;
+    if (!short &&
+        state.phase != TurnPhase.waitingForRoll &&
         state.phase != TurnPhase.canEndTurn) {
       return false;
     }
@@ -1142,7 +1520,17 @@ class GameController extends StateNotifier<GameState>
         type == NetworkActionType.blackout ||
         type == NetworkActionType.requestClaim ||
         type == NetworkActionType.acceptClaim ||
-        type == NetworkActionType.declineClaim;
+        type == NetworkActionType.declineClaim ||
+        type == NetworkActionType.armChrome ||
+        type == NetworkActionType.peekDeck ||
+        type == NetworkActionType.dodgeRent ||
+        type == NetworkActionType.fixer ||
+        type == NetworkActionType.plantVirus ||
+        type == NetworkActionType.clearVirus ||
+        type == NetworkActionType.settleShortfall ||
+        type == NetworkActionType.abandonShortfall ||
+        type == NetworkActionType.heatPay ||
+        type == NetworkActionType.heatJail;
   }
 
   void _onRemoteAction(NetworkAction action) {
@@ -1235,6 +1623,28 @@ class GameController extends StateNotifier<GameState>
         case NetworkActionType.ready:
         case NetworkActionType.startGame:
           break;
+        case NetworkActionType.armChrome:
+          armSandevistan();
+        case NetworkActionType.peekDeck:
+          peekDeck();
+        case NetworkActionType.dodgeRent:
+          dodgeRent();
+        case NetworkActionType.fixer:
+          takeFixer(action.payload['job'] as String? ?? 'delivery');
+        case NetworkActionType.plantVirus:
+          plantVirus((action.payload['cellIndex'] as num?)?.toInt() ?? -1);
+        case NetworkActionType.clearVirus:
+          clearVirus((action.payload['cellIndex'] as num?)?.toInt() ?? -1);
+        case NetworkActionType.settleShortfall:
+          settleShortfall();
+        case NetworkActionType.abandonShortfall:
+          abandonShortfall();
+        case NetworkActionType.heatPay:
+          resolveHeat(pay: true);
+        case NetworkActionType.heatJail:
+          resolveHeat(pay: false);
+        case NetworkActionType.cityDecree:
+          chooseDecree(action.payload['kind'] as String? ?? 'maglevFree');
       }
     } catch (e, st) {
       assert(() {
@@ -1544,7 +1954,7 @@ class GameController extends StateNotifier<GameState>
 
     final ownerId = cell.ownerIdOrNull;
     if (ownerId == null) {
-      final price = cell.priceOrNull!;
+      final price = CityOps.buyPrice(state, _active, cell);
       state = state.copyWith(
         phase: TurnPhase.cellAction,
         pendingAction: PendingAction.buyOffer(
@@ -1560,30 +1970,70 @@ class GameController extends StateNotifier<GameState>
       return;
     }
 
-    if (ownerId == _active.id || cell.isMortgagedOrFalse) {
+    if (ownerId == _active.id) {
+      _tickVirus(cell.index);
+      state = state.copyWith(log: _append(t.onCell(_active.name, cell.name)));
+      _finishCellAction(autoPass: false);
+      return;
+    }
+    if (cell.isMortgagedOrFalse) {
+      _tickVirus(cell.index);
       _finishCellAction(autoPass: true);
       return;
     }
 
-    final rent = RulesEngine.calculateRent(
+    final rent = CityOps.adjustedRent(
+      state: state,
       cell: cell,
-      board: state.board,
-      diceTotal: state.lastRoll?.total ?? 0,
-      suppressed: Nightfall.cellSuppressed(state, cell.index),
-      rentMultiplier: rentMultiplier,
-      utilityFlatTen: utilityFlatTen,
+      base: RulesEngine.calculateRent(
+        cell: cell,
+        board: state.board,
+        diceTotal: state.lastRoll?.total ?? 0,
+        suppressed: Nightfall.cellSuppressed(state, cell.index),
+        rentMultiplier: rentMultiplier,
+        utilityFlatTen: utilityFlatTen,
+      ),
     );
+    _tickVirus(cell.index);
     if (rent <= 0) {
       _finishCellAction(autoPass: true);
       return;
     }
 
-    final owner = state.players.firstWhere((p) => p.id == ownerId);
-    if (RulesEngine.isBankruptAfter(_active, rent)) {
-      raiseFunds(_active.id, rent);
+    if (_active.chrome == Chrome.kerenzikov &&
+        !_active.chromeSpent &&
+        _active.isAi &&
+        rent >= 100) {
+      state = state.copyWith(
+        players: _replacePlayer(_active.copyWith(chromeSpent: true)),
+        log: _append(
+          t.pick(
+            '${_active.name} burns Kerenzikov and ignores ${GameRules.credits(rent)}.',
+            '${_active.name} палить Kerenzikov і ігнорує ${GameRules.credits(rent)}.',
+          ),
+        ),
+      );
+      _finishCellAction(autoPass: false);
+      return;
     }
 
-    if (RulesEngine.isBankruptAfter(_active, rent)) {
+    final dodge = !_active.isAi &&
+        _active.chrome == Chrome.kerenzikov &&
+        !_active.chromeSpent;
+
+    final owner = state.players.firstWhere((p) => p.id == ownerId);
+    if (!dodge) {
+      final covered = _ensureFunds(
+        amount: rent,
+        kind: 'rent',
+        creditorId: ownerId,
+        cellIndex: cell.index,
+        label: cell.name,
+      );
+      if (covered == null) return;
+    }
+
+    if (!dodge && RulesEngine.isBankruptAfter(_active, rent)) {
       state = state.copyWith(
         pendingAction: PendingAction.rentNotice(
           payerName: _active.name,
@@ -1596,66 +2046,97 @@ class GameController extends StateNotifier<GameState>
       return;
     }
 
-    final payer = _active.copyWith(balance: _active.balance - rent);
-    final paidOwner = owner.copyWith(balance: owner.balance + rent);
-    soundService.play(Sfx.rent);
-    _speak(
-      paidOwner,
-      AiDialogueEvent.collectRent,
-      otherName: payer.name,
-      amount: rent,
-    );
+    final payer = dodge
+        ? _active
+        : _active.copyWith(balance: _active.balance - rent);
+    final paidOwner = dodge
+        ? owner
+        : owner.copyWith(
+            balance: owner.balance + rent,
+            heat: rent >= GameRules.bigRentHeat ? owner.heat + 1 : owner.heat,
+          );
+    if (!dodge) {
+      soundService.play(Sfx.rent);
+      _speak(
+        paidOwner,
+        AiDialogueEvent.collectRent,
+        otherName: payer.name,
+        amount: rent,
+      );
+    }
     state = state.copyWith(
-      players: _replacePlayers([payer, paidOwner]),
+      players: dodge ? state.players : _replacePlayers([payer, paidOwner]),
       phase: TurnPhase.cellAction,
       pendingAction: PendingAction.rentNotice(
         payerName: payer.name,
         ownerName: paidOwner.name,
         propertyName: cell.name,
         amount: rent,
+        canDodge: dodge,
       ),
       log: _append(
-        t.paidRent(
-          payer.name,
-          GameRules.credits(rent),
-          paidOwner.name,
-          cell.name,
-        ),
+        dodge
+            ? t.pick(
+                '${payer.name} can burn Kerenzikov on ${cell.name}.',
+                '${payer.name} може спалити Kerenzikov на ${cell.name}.',
+              )
+            : t.paidRent(
+                payer.name,
+                GameRules.credits(rent),
+                paidOwner.name,
+                cell.name,
+              ),
       ),
     );
   }
 
   void _payTax(int amount, String name) {
-    if (RulesEngine.isBankruptAfter(_active, amount)) {
-      raiseFunds(_active.id, amount);
+    final due = CityOps.taxDue(state, amount);
+    if (due == 0) {
+      state = state.copyWith(
+        log: _append(
+          t.pick(
+            '$name is on tax holiday.',
+            '$name спить — податкові канікули.',
+          ),
+        ),
+      );
+      _finishCellAction(autoPass: true);
+      return;
     }
-    if (RulesEngine.isBankruptAfter(_active, amount)) {
+    final covered = _ensureFunds(
+      amount: due,
+      kind: 'tax',
+      label: name,
+    );
+    if (covered == null) return;
+    if (RulesEngine.isBankruptAfter(_active, due)) {
       state = state.copyWith(
         pendingAction: PendingAction.taxNotice(
           playerName: _active.name,
           taxName: name,
-          amount: amount,
+          amount: due,
         ),
       );
       _declareBankruptcy(_active, creditorId: null);
       return;
     }
-    final p = _active.copyWith(balance: _active.balance - amount);
+    final p = _active.copyWith(balance: _active.balance - due);
     state = state.copyWith(
       players: _replacePlayer(p),
       phase: TurnPhase.cellAction,
       pendingAction: PendingAction.taxNotice(
         playerName: p.name,
         taxName: name,
-        amount: amount,
+        amount: due,
       ),
-      log: _append(t.paidTax(p.name, name, GameRules.credits(amount))),
+      log: _append(t.paidTax(p.name, name, GameRules.credits(due))),
     );
   }
 
-  void _purchase(int cellIndex) {
+  void _purchase(int cellIndex, {int? priceOverride}) {
     final cell = state.cellAt(cellIndex);
-    final price = cell.priceOrNull!;
+    final price = priceOverride ?? CityOps.buyPrice(state, _active, cell);
     if (!RulesEngine.canAfford(_active, price)) {
       state = state.copyWith(
         log: _append(t.cannotAfford(_active.name, cell.name)),
@@ -1728,6 +2209,7 @@ class GameController extends StateNotifier<GameState>
       phase: TurnPhase.canEndTurn,
       pendingAction: const PendingAction.none(),
     );
+    if (_flushQueuedAuction()) return;
     if (autoPass && !_active.isAi && !state.isGameOver) {
       endTurn();
     }
@@ -1739,6 +2221,7 @@ class GameController extends StateNotifier<GameState>
       pendingAction: const PendingAction.none(),
       phase: TurnPhase.canEndTurn,
     );
+    if (_flushQueuedAuction()) return;
     _pokeAi();
   }
 
@@ -1990,7 +2473,11 @@ class GameController extends StateNotifier<GameState>
           if (i != best.index) i,
       ],
     );
-    state = state.copyWith(board: board, players: _replacePlayer(stripped));
+    state = state.copyWith(
+      board: board,
+      players: _replacePlayer(stripped),
+      queuedAuctionIndex: best.index,
+    );
     return best.name;
   }
 
@@ -2217,6 +2704,169 @@ class GameController extends StateNotifier<GameState>
     );
   }
 
+  /// True when the bill can be paid now. Null when a human is choosing
+  /// what to mortgage. False when nothing can cover it.
+  bool? _ensureFunds({
+    required int amount,
+    required String kind,
+    String? creditorId,
+    int? cellIndex,
+    required String label,
+  }) {
+    if (_active.balance >= amount) return true;
+    if (_active.isAi) {
+      raiseFunds(_active.id, amount);
+      return _active.balance >= amount;
+    }
+    if (!_hasLiquidAssets(_active)) return false;
+    state = state.copyWith(
+      phase: TurnPhase.cellAction,
+      pendingAction: PendingAction.shortfall(
+        amount: amount,
+        kind: kind,
+        creditorId: creditorId,
+        cellIndex: cellIndex,
+        label: label,
+      ),
+    );
+    return null;
+  }
+
+  bool _hasLiquidAssets(Player player) {
+    for (final index in player.propertyIndexes) {
+      final cell = state.cellAt(index);
+      if (cell is PropertyCell && cell.houses > 0) return true;
+      if (cell.isOwnable && !cell.isMortgagedOrFalse) return true;
+    }
+    return false;
+  }
+
+  void _tickVirus(int index) {
+    final at = state.virusCells.indexOf(index);
+    if (at < 0) return;
+    final cells = [...state.virusCells];
+    final hops = [...state.virusHops];
+    final left = (at < hops.length ? hops[at] : 1) - 1;
+    if (left <= 0) {
+      cells.removeAt(at);
+      if (at < hops.length) hops.removeAt(at);
+    } else if (at < hops.length) {
+      hops[at] = left;
+    }
+    state = state.copyWith(virusCells: cells, virusHops: hops);
+  }
+
+  bool _flushQueuedAuction() {
+    final index = state.queuedAuctionIndex;
+    if (index == null || state.isGameOver) return false;
+    state = state.copyWith(queuedAuctionIndex: null);
+    final cell = state.cellAt(index);
+    if (cell.ownerIdOrNull != null) return false;
+    _beginAuction(index, cell.name);
+    return true;
+  }
+
+  void _applyDecree(String leaderId, String kind, int round, {String group = ''}) {
+    final decree = switch (kind) {
+      'rentSurge' => CityDecree.rentSurge,
+      'taxHoliday' => CityDecree.taxHoliday,
+      _ => CityDecree.maglevFree,
+    };
+    var surge = group;
+    if (decree == CityDecree.rentSurge && surge.isEmpty) {
+      final leader = state.players.firstWhere((p) => p.id == leaderId);
+      surge = CityOps.surgeGroupFor(state, leader) ?? '';
+    }
+    final name = state.players.firstWhere((p) => p.id == leaderId).name;
+    state = state.copyWith(
+      decree: decree,
+      surgeGroup: surge,
+      decreeArmedRound: round,
+      log: _append(
+        t.pick(
+          '$name sets a city decree: $kind.',
+          '$name задає указ міста: $kind.',
+        ),
+      ),
+    );
+  }
+
+  void _openCityVoteIfDue(int round) {
+    if (round != 10 && round != 20) return;
+    if (state.decreeArmedRound >= round) return;
+    Player? leader;
+    var worth = -1 << 30;
+    for (final p in state.livingPlayers) {
+      final w = Nightfall.netWorth(state, p);
+      if (w > worth) {
+        worth = w;
+        leader = p;
+      }
+    }
+    if (leader == null) return;
+    if (leader.isAi) {
+      final group = CityOps.surgeGroupFor(state, leader);
+      _applyDecree(
+        leader.id,
+        group == null ? 'maglevFree' : 'rentSurge',
+        round,
+        group: group ?? '',
+      );
+      return;
+    }
+    state = state.copyWith(
+      phase: TurnPhase.cellAction,
+      pendingAction: PendingAction.cityVote(
+        round: round,
+        leaderId: leader.id,
+      ),
+    );
+  }
+
+  void _openHeatIfDue() {
+    if (state.pendingAction is! PendingNone) return;
+    if (_active.heat < GameRules.heatMax) return;
+    if (_active.isAi) {
+      _applyHeat(pay: _active.balance >= GameRules.heatFine + GameRules.goSalary);
+      return;
+    }
+    state = state.copyWith(
+      phase: TurnPhase.cellAction,
+      pendingAction: PendingAction.heatCheck(fine: GameRules.heatFine),
+    );
+  }
+
+  void _applyHeat({required bool pay}) {
+    if (pay && _active.balance >= GameRules.heatFine) {
+      final p = _active.copyWith(
+        balance: _active.balance - GameRules.heatFine,
+        heat: 0,
+      );
+      state = state.copyWith(
+        players: _replacePlayer(p),
+        phase: TurnPhase.waitingForRoll,
+        pendingAction: const PendingAction.none(),
+        log: _append(
+          t.pick(
+            '${p.name} pays the heat fine.',
+            '${p.name} сплачує штраф за увагу.',
+          ),
+        ),
+      );
+      return;
+    }
+    state = state.copyWith(
+      players: _replacePlayer(_active.copyWith(heat: 0)),
+    );
+    _sendToJail(
+      reason: t.pick(
+        '${_active.name} is detained. Heat is maxed.',
+        '${_active.name} затримано. Увага на максимумі.',
+      ),
+      resetDoubles: true,
+    );
+  }
+
   void _advanceToNextPlayer() {
     if (state.isGameOver) return;
 
@@ -2272,6 +2922,8 @@ class GameController extends StateNotifier<GameState>
       ),
     );
     unawaited(_autosaveIfNeeded());
+    _openCityVoteIfDue(round);
+    _openHeatIfDue();
     _pokeAi();
   }
 

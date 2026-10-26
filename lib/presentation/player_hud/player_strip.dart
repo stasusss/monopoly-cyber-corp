@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/constants/street_colors.dart';
 import '../../core/theme/cyber_theme.dart';
+import '../../logic/city_ops.dart';
 import '../../logic/game_controller.dart';
 import '../../models/player.dart';
 import '../widgets/animated_credits.dart';
@@ -27,6 +29,7 @@ class PlayerStrip extends ConsumerWidget {
                 child: _StripChip(
                   player: state.players[i],
                   active: i == state.activePlayerIndex,
+                  districts: CityOps.districts(state, state.players[i]),
                 ),
               ),
             ],
@@ -38,10 +41,15 @@ class PlayerStrip extends ConsumerWidget {
 }
 
 class _StripChip extends StatelessWidget {
-  const _StripChip({required this.player, required this.active});
+  const _StripChip({
+    required this.player,
+    required this.active,
+    required this.districts,
+  });
 
   final Player player;
   final bool active;
+  final List<ColorGroup> districts;
 
   @override
   Widget build(BuildContext context) {
@@ -93,19 +101,32 @@ class _StripChip extends StatelessWidget {
                       height: 1,
                     ),
                   ),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: AnimatedCredits(
-                      amount: player.balance,
-                      textAlign: TextAlign.left,
-                      style: GoogleFonts.shareTechMono(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                        color: CyberColors.cyberYellow,
-                        fontFeatures: const [FontFeature.tabularFigures()],
+                  Row(
+                    children: [
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: AnimatedCredits(
+                            amount: player.balance,
+                            textAlign: TextAlign.left,
+                            style: GoogleFonts.shareTechMono(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                              color: CyberColors.cyberYellow,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      for (final group in districts.take(5))
+                        Container(
+                          width: 5,
+                          height: 5,
+                          margin: const EdgeInsets.only(left: 2),
+                          color: group.swatch,
+                        ),
+                    ],
                   ),
                 ],
               ),

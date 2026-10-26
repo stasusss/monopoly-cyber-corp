@@ -223,6 +223,82 @@ class AppStrings {
         'Примусовий викуп коштує $price. Не вистачає $short.',
       );
 
+  String forSale(String price) => pick('Unclaimed · $price', 'Вільна · $price');
+  String get yourNode => pick('Yours', 'Твоя');
+  String yourNodeLevel(int racks) =>
+      racks >= 5 ? pick('Yours · HQ', 'Твоя · штаб') : pick('Yours · rack $racks', 'Твоя · стійка $racks');
+  String get icedOver => pick('ICE lock · no rent', 'Під заставою · ренти немає');
+  String rentTo(String amount, String owner) =>
+      pick('Rent $amount → $owner', 'Рента $amount → $owner');
+  String virusRent(String amount, String owner) =>
+      pick('Virus · rent $amount → $owner', 'Вірус · рента $amount → $owner');
+  String taxDue(String amount) => pick('Tax $amount', 'Податок $amount');
+  String get taxSleeping => pick('Tax holiday', 'Податки сплять');
+
+  String get shortfallTitle => pick('SHORT STACK', 'НЕ ВИСТАЧАЄ');
+  String shortfallBody(String amount, String label) => pick(
+        'You need $amount for $label. Mortgage or sell, then pay. Or flatline.',
+        'Треба $amount за $label. Застав або продай, тоді заплати. Або згорай.',
+      );
+  String get payNow => pick('PAY', 'СПЛАТИТИ');
+  String get flatline => pick('FLATLINE', 'ЗГОРІТИ');
+
+  String chromeName(String id) => switch (id) {
+        'sandevistan' => 'Sandevistan',
+        'kerenzikov' => 'Kerenzikov',
+        'cyberdeck' => 'Cyberdeck',
+        'mantis' => 'Mantis',
+        _ => pick('NO CHROME', 'БЕЗ ХРОМУ'),
+      };
+  String chromeBlurb(String id) => switch (id) {
+        'sandevistan' => pick(
+            'Once: the next roll keeps the higher of two throws.',
+            'Раз: наступний кидок лишає кращий із двох.',
+          ),
+        'kerenzikov' => pick(
+            'Once: ignore one rent.',
+            'Раз: проігноруй одну ренту.',
+          ),
+        'cyberdeck' => pick(
+            'Once: read the next Data Breach card.',
+            'Раз: прочитай наступну карту витоку.',
+          ),
+        'mantis' => pick(
+            'Buys that extend a district you started cost 20% less.',
+            'Покупка в районі, який ти вже почав, дешевша на 20%.',
+          ),
+        _ => pick('Stock nerves.', 'Стокові нерви.'),
+      };
+  String get armSand => pick('SANDEVISTAN', 'SANDEVISTAN');
+  String get peekDeck => pick('PEEK BREACH', 'ПІДГЛЯНУТИ ВИТІК');
+  String get dodgeRent => pick('KERENZIKOV', 'KERENZIKOV');
+  String get fixer => pick('FIXER', 'ФІКСЕР');
+  String get fixerDelivery => pick(
+        'Deliver to Arasaka Tower Lobby',
+        'Доставка в Arasaka Tower Lobby',
+      );
+  String get fixerSkim =>
+      pick('Skim ₵150 · +heat', 'Злити ₵150 · +увага');
+  String get fixerIce => pick('Ice bath · clear heat, +₵50', 'Крига · скинути увагу, +₵50');
+  String virusLabel(String cost) => pick('VIRUS −$cost', 'ВІРУС −$cost');
+  String clearVirusLabel(String cost) => pick('PURGE −$cost', 'ЗНЯТИ ВІРУС −$cost');
+  String get heatTitle => pick('NCPD HEAT', 'УВАГА NCPD');
+  String heatBody(String fine) => pick(
+        'Your trail is hot. Pay $fine or spend the turn in ICE.',
+        'Слід гарячий. Сплати $fine або сядь в ICE на цей хід.',
+      );
+  String get payHeat => pick('PAY FINE', 'ШТРАФ');
+  String get sitIce => pick('SIT IN ICE', 'В ICE');
+  String get cityTitle => pick('CITY DECREE', 'УКАЗ МІСТА');
+  String cityBody(int round) => pick(
+        'Round $round. The leading corp sets the rule until the next decree.',
+        'Раунд $round. Корп на чолі задає правило до наступного указу.',
+      );
+  String get decreeSurge => pick('RENT SURGE · your best district ×2', 'СКАЧОК РЕНТИ · твій найкращий район ×2');
+  String get decreeMaglev => pick('MAGLEV FREE', 'МАГЛЕВ БЕЗКОШТОВНИЙ');
+  String get decreeTax => pick('TAX HOLIDAY', 'ПОДАТКОВІ КАНІКУЛИ');
+  String heatPips(int heat) => pick('HEAT $heat', 'УВАГА $heat');
+
   String blurbFor(String kind) => switch (kind) {
         'go' => pick(
             'Pass this node to collect ₵200.',

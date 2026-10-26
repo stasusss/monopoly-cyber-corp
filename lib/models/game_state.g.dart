@@ -60,6 +60,22 @@ _$GameStateImpl _$$GameStateImplFromJson(
       const [],
   nextRentMultiplier: (json['nextRentMultiplier'] as num?)?.toInt() ?? 1,
   nextUtilityFlatTen: json['nextUtilityFlatTen'] as bool? ?? false,
+  virusCells:
+      (json['virusCells'] as List<dynamic>?)
+          ?.map((e) => (e as num).toInt())
+          .toList() ??
+      const [],
+  virusHops:
+      (json['virusHops'] as List<dynamic>?)
+          ?.map((e) => (e as num).toInt())
+          .toList() ??
+      const [],
+  decree:
+      $enumDecodeNullable(_$CityDecreeEnumMap, json['decree']) ??
+      CityDecree.none,
+  surgeGroup: json['surgeGroup'] as String? ?? '',
+  decreeArmedRound: (json['decreeArmedRound'] as num?)?.toInt() ?? 0,
+  queuedAuctionIndex: (json['queuedAuctionIndex'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$$GameStateImplToJson(_$GameStateImpl instance) =>
@@ -89,6 +105,12 @@ Map<String, dynamic> _$$GameStateImplToJson(_$GameStateImpl instance) =>
       'blackoutGroupsThisRound': instance.blackoutGroupsThisRound,
       'nextRentMultiplier': instance.nextRentMultiplier,
       'nextUtilityFlatTen': instance.nextUtilityFlatTen,
+      'virusCells': instance.virusCells,
+      'virusHops': instance.virusHops,
+      'decree': _$CityDecreeEnumMap[instance.decree]!,
+      'surgeGroup': instance.surgeGroup,
+      'decreeArmedRound': instance.decreeArmedRound,
+      'queuedAuctionIndex': instance.queuedAuctionIndex,
     };
 
 const _$TurnPhaseEnumMap = {
@@ -98,4 +120,11 @@ const _$TurnPhaseEnumMap = {
   TurnPhase.cellAction: 'cellAction',
   TurnPhase.canEndTurn: 'canEndTurn',
   TurnPhase.gameOver: 'gameOver',
+};
+
+const _$CityDecreeEnumMap = {
+  CityDecree.none: 'none',
+  CityDecree.rentSurge: 'rentSurge',
+  CityDecree.maglevFree: 'maglevFree',
+  CityDecree.taxHoliday: 'taxHoliday',
 };

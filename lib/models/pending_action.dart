@@ -19,6 +19,7 @@ sealed class PendingAction with _$PendingAction {
     required String ownerName,
     required String propertyName,
     required int amount,
+    @Default(false) bool canDodge,
   }) = PendingRentNotice;
 
   const factory PendingAction.taxNotice({
@@ -62,6 +63,26 @@ sealed class PendingAction with _$PendingAction {
     required List<int> cellIndexes,
     required bool consumesBuyout,
   }) = PendingClaimOffer;
+
+  /// Human is short on a bill and must mortgage, sell, pay, or flatline.
+  const factory PendingAction.shortfall({
+    required int amount,
+    required String kind,
+    String? creditorId,
+    int? cellIndex,
+    required String label,
+  }) = PendingShortfall;
+
+  /// Net-worth leader picks the mid-session city decree.
+  const factory PendingAction.cityVote({
+    required int round,
+    required String leaderId,
+  }) = PendingCityVote;
+
+  /// Heat is maxed: pay the fine or sit in ICE.
+  const factory PendingAction.heatCheck({
+    required int fine,
+  }) = PendingHeatCheck;
 
   factory PendingAction.fromJson(Map<String, dynamic> json) =>
       _$PendingActionFromJson(json);
